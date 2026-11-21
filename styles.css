@@ -1,0 +1,97 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&display=swap');
+
+:root {
+  --kb-green: #0E5A3E;
+  --kb-green-dark: #0A422D;
+  --kb-green-soft: #EAF5F0;
+  --kb-bg: #F6F4EE;
+  --kb-card: #FFFFFF;
+  --kb-ink: #14281E;
+  --kb-muted: #52675C;
+  --kb-border: #E2DDD0;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: 'Cairo', system-ui, -apple-system, sans-serif;
+  background: var(--kb-bg);
+  color: var(--kb-ink);
+  margin: 0;
+  padding-bottom: 86px;
+  overflow-x: hidden;
+}
+
+.kb-header {
+  background: linear-gradient(135deg, #0E5A3E 0%, #15734F 100%);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.kb-pill {
+  transition: all 0.16s ease;
+  white-space: nowrap;
+}
+
+.kb-pill.active {
+  background: var(--kb-green);
+  color: #FFFFFF;
+  border-color: var(--kb-green);
+  box-shadow: 0 3px 10px rgba(14, 90, 62, 0.22);
+}
+
+.kb-nav-btn {
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.kb-nav-btn.active {
+  color: var(--kb-green);
+  font-weight: 800;
+}
+
+.kb-nav-btn.active .kb-nav-dot {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.kb-nav-dot {
+  width: 22px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--kb-green);
+  opacity: 0;
+  transform: scale(0.4);
+  transition: all 0.18s ease;
+}
+
+.leaflet-container {
+  font-family: 'Cairo', system-ui, sans-serif;
+  z-index: 10;
+}
+
+.kb-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 2.5px solid #FFFFFF;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.28);
+  font-size: 16px;
+}
+
+.kb-modal-backdrop {
+  background: rgba(10, 30, 20, 0.56);
+  backdrop-filter: blur(3px);
+}
