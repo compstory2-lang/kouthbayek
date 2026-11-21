@@ -9,8 +9,35 @@
   <link rel="manifest" href="./manifest.json" />
   <link rel="stylesheet" href="./style.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script>
+    // مسح أي Service Worker أو كاش قديم يمنع تحديث الملفات
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        regs.forEach(function (r) { r.unregister(); });
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then(function (keys) {
+        keys.forEach(function (k) { caches.delete(k); });
+      });
+    }
+
+    // إظهار أي خطأ JS مباشرة على الشاشة لتشخيصه فوراً
+    window.__KB_ERRORS__ = [];
+    window.addEventListener('error', function (e) {
+      var msg = (e && e.message ? e.message : 'خطأ غير معروف') + (e && e.filename ? ' (' + e.filename.split('/').pop() + ':' + e.lineno + ')' : '');
+      window.__KB_ERRORS__.push(msg);
+      var bar = document.getElementById('kbDebugBar');
+      if (bar) {
+        bar.style.display = 'block';
+        bar.textContent = '⚠️ خطأ: ' + window.__KB_ERRORS__.join(' | ');
+      }
+    });
+  </script>
 </head>
 <body>
+  <div id="kbDebugBar" style="display:none;background:#fee2e2;color:#991b1b;padding:8px 12px;font-size:13px;border-bottom:1px solid #fca5a5;text-align:right;direction:rtl;"></div>
+
   <header class="app-header">
     <div class="brand-row">
       <div class="brand">
@@ -116,4 +143,18 @@
       <div id="mapSelectedCard" class="map-selected-card hidden"></div>
     </section>
 
-    <!-- تبويب 5: حسابي (المعلن / الحرف
+    <!-- تبويب 5: حسابي (المعلن / الحرفي) -->
+    <section id="tab-account" class="tab-panel">
+      <div class="section-head">
+        <h2>👤 حسابي (معلن / حرفي)</h2>
+        <span class="badge-trial">60 يوماً مجانية</span>
+      </div>
+
+      <div id="accountAuthBox" class="card-box">
+        <h3>تسجيل الدخول أو إنشاء حساب معلن</h3>
+        <p class="muted">التصفح مجاني للجميع. للمعلنين والحرفيين: 60 يوماً مجانية تبدأ من تاريخ تسجيلك.</p>
+        <div class="form-group">
+          <label for="authPhone">رقم الهاتف التونسي (8 أرقام)</label>
+          <input type="tel" id="authPhone" maxlength="8" placeholder="مثال: 22123456" inputmode="numeric" />
+        </div>
+        <div class="form-
