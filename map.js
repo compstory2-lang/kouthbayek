@@ -1,4 +1,4 @@
-// خوذ بايك — وحدة الخرائط التفاعلية عبر Leaflet.js
+// خوذ بايك — وحدة الخرائط التفاعلية عبر Leaflet.js (v1.1-TN)
 window.KB_MAP = (() => {
   'use strict';
 
@@ -26,14 +26,19 @@ window.KB_MAP = (() => {
     const ph = D.cleanPhone(item.phone);
     if (kind === 'market') {
       const cat = D.getMarketCatInfo(item.cat);
+      const imgHtml = item.imageUrl
+        ? `<img src="${D.escHtml(item.imageUrl)}" alt="" class="h-36 w-full rounded-xl object-cover border border-[#E2DDD0]" />`
+        : '';
       box.innerHTML = `
         <div class="space-y-2">
+          ${imgHtml}
           <div class="flex items-center justify-between gap-2">
-            <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-black text-emerald-900">🟢 عرض سوق • ${cat.icon} ${D.escHtml(cat.label)}</span>
+            <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-black text-emerald-900">🟢 ${cat.icon} ${D.escHtml(cat.label)}</span>
             <span class="text-sm font-black text-[#0E5A3E]">${D.escHtml(item.price)} د.ت</span>
           </div>
           <h4 class="text-sm font-black text-emerald-950">${D.escHtml(item.title)}</h4>
-          <p class="text-xs font-bold text-slate-600">📍 ${D.escHtml(item.gov)} • ${D.escHtml(item.seller)} • ⏱️ ${D.escHtml(D.formatRemaining(item.expiresAt))}</p>
+          ${item.desc ? `<p class="text-xs font-semibold text-slate-700">${D.escHtml(item.desc)}</p>` : ''}
+          <p class="text-xs font-bold text-slate-500">📍 ${D.escHtml(item.gov)} • ${D.escHtml(item.seller)} • ⏱️ ${D.escHtml(D.formatRemaining(item.expiresAt))}</p>
           <div class="grid grid-cols-2 gap-2">
             <a href="tel:+216${ph}" class="rounded-xl bg-[#0E5A3E] py-2 text-center text-xs font-extrabold text-white">📞 اتصال</a>
             <a href="https://wa.me/216${ph}" target="_blank" rel="noopener" class="rounded-xl bg-emerald-600 py-2 text-center text-xs font-extrabold text-white">💬 واتساب</a>
@@ -84,7 +89,8 @@ window.KB_MAP = (() => {
     if (layers.market) {
       offers.forEach((o) => {
         if (!o.lat || !o.lng) return;
-        const m = L.marker([o.lat, o.lng], { icon: makePinIcon('#0E5A3E', '🛒') }).addTo(mainMarkersLayer);
+        const pinEmoji = o.cat === 'vehicles' ? '🚗' : '🛒';
+        const m = L.marker([o.lat, o.lng], { icon: makePinIcon('#0E5A3E', pinEmoji) }).addTo(mainMarkersLayer);
         m.on('click', () => showDetailCard('market', o));
         if (focusTarget && focusTarget.kind === 'market' && focusTarget.id === o.id) {
           mainMap.setView([o.lat, o.lng], 13);
@@ -147,9 +153,5 @@ window.KB_MAP = (() => {
     }
   }
 
-  return {
-    renderMain,
-    ensurePicker,
-    movePicker
-  };
+  return { renderMain, ensurePicker, movePicker };
 })();

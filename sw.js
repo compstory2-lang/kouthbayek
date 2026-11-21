@@ -1,6 +1,6 @@
-// خوذ بايك — Service Worker (Network-first للملفات الأساسية لتفادي الكاش القديم)
-const CACHE_NAME = 'khouz-bayek-v1.0';
-const CORE_ASSETS = ['./', './index.html', './styles.css', './config.js', './data.js', './map.js', './app.js'];
+// خوذ بايك — Service Worker v1.1 (Network-first للملفات الأساسية لتفادي الكاش القديم)
+const CACHE_NAME = 'khouz-bayek-v1.1';
+const CORE_ASSETS = ['./', './index.html', './styles.css', './config.js', './data.js', './map.js', './app.js', './privacy.html'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

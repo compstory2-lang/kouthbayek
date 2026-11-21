@@ -1,14 +1,16 @@
-// خوذ بايك — الإعدادات والولايات التونسية الـ 24 والفئات والبيانات الابتدائية
+// خوذ بايك — الإعدادات والولايات التونسية الـ 24 والفئات والبيانات الابتدائية (v1.1-TN)
 window.KB_CONFIG = (() => {
   'use strict';
 
-  // عند إنشاء مشروع Supabase الخاص بـ «خوذ بايك»، ضع الرابط والمفتاح هنا
   const SUPABASE = {
     url: 'https://tlgfwkbsgaiyylhhmywv.supabase.co',
     anonKey: 'sb_publishable_oW2H_1p5MCX82_bJOObyfA_AplDj2bk'
   };
 
-  const VERSION = 'v1.0-TN';
+  const VERSION = 'v1.1-TN';
+  const OFFER_TTL_HOURS = 72; // 3 أيام (تختفي تلقائياً سواء بيعت أم لا)
+  const STORAGE_BUCKET = 'offer-images';
+  const HR = 3600 * 1000;
 
   const TN_GOVERNORATES = [
     { id: 'Gabès', ar: 'قابس', lat: 33.8815, lng: 10.0982 },
@@ -39,6 +41,7 @@ window.KB_CONFIG = (() => {
 
   const MARKET_CATS = [
     { id: 'all', label: 'الكل', icon: '✨' },
+    { id: 'vehicles', label: 'سيارات ودراجات', icon: '🚗' },
     { id: 'fast24', label: 'عروض اليوم السريعة', icon: '⚡' },
     { id: 'livestock', label: 'أغنام وأبقار ومواشي', icon: '🐑' },
     { id: 'pets', label: 'حيوانات أليفة وطيور', icon: '🐦' },
@@ -67,19 +70,91 @@ window.KB_CONFIG = (() => {
   ];
 
   const nowMs = Date.now();
-  const HR = 3600 * 1000;
-
   const SEED_OFFERS = [
-    { id: 'of-1', title: '5 لترات زيت زيتون بكر عصرة أولى (مطماطة)', price: 110, cat: 'farm', gov: 'قابس', seller: 'الحاج بلقاسم — شنني', phone: '22415678', lat: 33.8762, lng: 10.0721, createdAt: nowMs - 2 * HR, expiresAt: nowMs + 22 * HR },
-    { id: 'of-2', title: 'علوش وطني مسمّن وزن ~38 كغ جاهز للذبح', price: 890, cat: 'livestock', gov: 'قابس', seller: 'سوق الحامة للمواشي', phone: '98332145', lat: 33.8914, lng: 9.7963, createdAt: nowMs - 4 * HR, expiresAt: nowMs + 20 * HR },
-    { id: 'of-3', title: 'رمان قابس حلو + دقلة نور شمروخ (صندوق 5 كغ)', price: 32, cat: 'fast24', gov: 'قابس', seller: 'فلاحة واحة جارة', phone: '55829104', lat: 33.8849, lng: 10.1045, createdAt: nowMs - 1 * HR, expiresAt: nowMs + 23 * HR },
-    { id: 'of-4', title: 'آلة ثقب كهربائية Bosch مستعملة نظيفة جداً', price: 145, cat: 'tools', gov: 'قابس', seller: 'نزار — حي الأمل', phone: '29640112', lat: 33.8695, lng: 10.1112, createdAt: nowMs - 7 * HR, expiresAt: nowMs + 17 * HR },
-    { id: 'of-5', title: 'عسل سدر حر + بسيسة قمح منزلية (كغ)', price: 48, cat: 'grocery', gov: 'قابس', seller: 'دار البركة — قابس المدينة', phone: '52119044', lat: 33.8881, lng: 10.0951, createdAt: nowMs - 5 * HR, expiresAt: nowMs + 19 * HR },
-    { id: 'of-6', title: 'زوج عصافير كناري مغرّد بالقفص', price: 95, cat: 'pets', gov: 'صفاقس', seller: 'مهدي — طريق قرمدة', phone: '24778123', lat: 34.7521, lng: 10.7422, createdAt: nowMs - 3 * HR, expiresAt: nowMs + 21 * HR },
-    { id: 'of-7', title: 'دقلة نور قبلي فرز أول مباشرة من المنتج (10 كغ)', price: 90, cat: 'farm', gov: 'قبلي', seller: 'واحة دوز', phone: '97450221', lat: 33.7092, lng: 8.9721, createdAt: nowMs - 6 * HR, expiresAt: nowMs + 18 * HR },
-    { id: 'of-8', title: 'بقر حلوب فريزيان بالضمان الصحي', price: 6200, cat: 'livestock', gov: 'سيدي بوزيد', seller: 'فلاح الرقاب', phone: '50983321', lat: 35.0411, lng: 9.4910, createdAt: nowMs - 8 * HR, expiresAt: nowMs + 16 * HR },
-    { id: 'of-9', title: 'عرض اليوم: خبز طابونة وهريسة عربي طازجة', price: 12, cat: 'fast24', gov: 'تونس', seller: 'كوشة باب سويقة', phone: '21560987', lat: 36.8091, lng: 10.1684, createdAt: nowMs - 2 * HR, expiresAt: nowMs + 22 * HR },
-    { id: 'of-10', title: 'طقم مفاتيح ميكانيك 46 قطعة بحالة ممتازة', price: 115, cat: 'tools', gov: 'سوسة', seller: 'ورشة سهلول', phone: '54321980', lat: 35.8331, lng: 10.6024, createdAt: nowMs - 5 * HR, expiresAt: nowMs + 19 * HR }
+    {
+      id: 'of-v1', title: 'رينو كليو 4 (Clio 4) بنزين بحالة ممتازة', price: 31500, cat: 'vehicles',
+      gov: 'قابس', seller: 'أمين — قابس المدينة', phone: '98224110',
+      desc: 'موديل 2017 • 138,000 كم • بنزين 4 خيول • مكيف بارد، دهان أصلي، أوراق خالصة.',
+      imageUrl: '', status: 'active', userId: '',
+      lat: 33.8824, lng: 10.0975, createdAt: nowMs - 2 * HR, expiresAt: nowMs + 70 * HR
+    },
+    {
+      id: 'of-v2', title: 'دراجة نارية Forza 110cc + دراجة هوائية VTT', price: 2450, cat: 'vehicles',
+      gov: 'قابس', seller: 'يوسف — حي الأمل', phone: '55190822',
+      desc: 'موديل 2022 • محرك نظيف، بطاقة رمادية جاهزة، إطارات جديدة.',
+      imageUrl: '', status: 'active', userId: '',
+      lat: 33.8708, lng: 10.1091, createdAt: nowMs - 5 * HR, expiresAt: nowMs + 67 * HR
+    },
+    {
+      id: 'of-1', title: '5 لترات زيت زيتون بكر عصرة أولى (مطماطة)', price: 110, cat: 'farm',
+      gov: 'قابس', seller: 'الحاج بلقاسم — شنني', phone: '22415678',
+      desc: 'زيت زيتون عصرة باردة لموسم هذا العام، تعبئة نظيفة وتوصيل داخل قابس.',
+      imageUrl: '', status: 'active', userId: '',
+      lat: 33.8762, lng: 10.0721, createdAt: nowMs - 2 * HR, expiresAt: nowMs + 70 * HR
+    },
+    {
+      id: 'of-2', title: 'علوش وطني مسمّن وزن ~38 كغ جاهز للذبح', price: 890, cat: 'livestock',
+      gov: 'قابس', seller: 'سوق الحامة للمواشي', phone: '98332145',
+      desc: 'علف طبيعي شعير وتبن، صحة ممتازة، المعاينة يومياً صباحاً ومساءً.',
+      imageUrl: '', status: 'active', userId: '',
+      lat: 33.8914, lng: 9.7963, createdAt: nowMs - 4 * HR, expiresAt: nowMs + 68 * HR
+    },
+    {
+      id: 'of-3', title: 'رمان قابس حلو + دقلة نور شمروخ (صندوق 5 كغ)', price: 32, cat: 'fast24',
+      gov: 'قابس', seller: 'نصبة واحة جارة', phone: '55829104',
+      desc: 'قطف اليوم صباحاً من الواحة، البيع بالجملة والتفصيل أمام سوق جارة.',
+      imageUrl: '', status: 'active', userId: '',
+      lat: 33.8849, lng: 10.1045, createdAt: nowMs - 1 * HR, expiresAt: nowMs + 71 * HR
+    },
+    {
+      id: 'of-4', title: 'آلة ثقب كهربائية Bosch مستعملة نظيفة جداً', price: 145, cat: 'tools',
+      gov: 'قابس', seller: 'نزار — حي الأمل', phone: '29640112',
+      desc: 'أصلية 650W مع الحقيبة ومجموعة ريش كاملة، قابلة للتجربة قبل الشراء.',
+      imageUrl: '', status: 'active', userId: '',
+      lat: 33.8695, lng: 10.1112, createdAt: nowMs - 7 * HR, expiresAt: nowMs + 65 * HR
+    },
+    {
+      id: 'of-5', title: 'عسل سدر حر + بسيسة قمح منزلية (كغ)', price: 48, cat: 'grocery',
+      gov: 'قابس', seller: 'دار البركة — قابس المدينة', phone: '52119044',
+      desc: 'منتوج منزلي 100% بدون إضافات، متوفر عبوات 500غ و1 كغ.',
+      imageUrl: '', status: 'active', userId: '',
+      lat: 33.8881, lng: 10.0951, createdAt: nowMs - 5 * HR, expiresAt: nowMs + 67 * HR
+    },
+    {
+      id: 'of-6', title: 'زوج عصافير كناري مغرّد بالقفص', price: 95, cat: 'pets',
+      gov: 'صفاقس', seller: 'مهدي — طريق قرمدة', phone: '24778123',
+      desc: 'صحة ممتازة مع قفص جديد وأكسسوارات كاملة.',
+      imageUrl: '', status: 'active', userId: '',
+      lat: 34.7521, lng: 10.7422, createdAt: nowMs - 3 * HR, expiresAt: nowMs + 69 * HR
+    },
+    {
+      id: 'of-v3', title: 'بيجو 206+ بنزين اقتصادية جداً', price: 21000, cat: 'vehicles',
+      gov: 'صفاقس', seller: 'كريم — طريق تنيور', phone: '22883344',
+      desc: 'موديل 2012 • 165,000 كم • بنزين 4 خيول • صيانة دورية منتظمة.',
+      imageUrl: '', status: 'active', userId: '',
+      lat: 34.7460, lng: 10.7555, createdAt: nowMs - 6 * HR, expiresAt: nowMs + 66 * HR
+    },
+    {
+      id: 'of-7', title: 'دقلة نور قبلي فرز أول مباشرة من المنتج (10 كغ)', price: 90, cat: 'farm',
+      gov: 'قبلي', seller: 'واحة دوز', phone: '97450221',
+      desc: 'دقلة نور شمروخ طرية ولذيذة، إمكانية الإرسال عبر اللواج لباقي الولايات.',
+      imageUrl: '', status: 'active', userId: '',
+      lat: 33.7092, lng: 8.9721, createdAt: nowMs - 6 * HR, expiresAt: nowMs + 66 * HR
+    },
+    {
+      id: 'of-8', title: 'بقر حلوب فريزيان بالضمان الصحي', price: 6200, cat: 'livestock',
+      gov: 'سيدي بوزيد', seller: 'فلاح الرقاب', phone: '50983321',
+      desc: 'إنتاج يومي ممتاز مع شهادة بيطرية محيّنة.',
+      imageUrl: '', status: 'active', userId: '',
+      lat: 35.0411, lng: 9.4910, createdAt: nowMs - 8 * HR, expiresAt: nowMs + 64 * HR
+    },
+    {
+      id: 'of-9', title: 'عرض اليوم: خبز طابونة وهريسة عربي طازجة', price: 12, cat: 'fast24',
+      gov: 'تونس', seller: 'كوشة باب سويقة', phone: '21560987',
+      desc: 'طازج يومياً من الساعة 7 صباحاً حتى نفاد الكمية.',
+      imageUrl: '', status: 'active', userId: '',
+      lat: 36.8091, lng: 10.1684, createdAt: nowMs - 2 * HR, expiresAt: nowMs + 70 * HR
+    }
   ];
 
   const SEED_CRAFTS = [
@@ -94,14 +169,16 @@ window.KB_CONFIG = (() => {
   ];
 
   const SEED_EMERGENCIES = [
-    { id: 'em-1', type: 'عطل سيارة', gov: 'قابس', desc: 'عطل في بطارية السيارة قرب مفترق طريق الحامة، أحتاج مساعدة بكابل تشغيل.', phone: '55412098', lat: 33.8891, lng: 10.0522, createdAt: nowMs - 25 * 60 * 1000, status: 'open' },
-    { id: 'em-2', type: 'تسرب ماء', gov: 'قابس', desc: 'انفجار أنبوب ماء رئيسي أمام مدخل عمارة بحي الأمل 2، نحتاج سباك مستعجل.', phone: '22908711', lat: 33.8685, lng: 10.1125, createdAt: nowMs - 55 * 60 * 1000, status: 'open' },
-    { id: 'em-3', type: 'كهرباء', gov: 'صفاقس', desc: 'تلامس كهربائي في عداد المنزل بطريق العين كلم 4، نبحث عن كهربائي متاح فوراً.', phone: '98554012', lat: 34.7495, lng: 10.7311, createdAt: nowMs - 90 * 60 * 1000, status: 'open' }
+    { id: 'em-1', type: 'عطل سيارة', gov: 'قابس', desc: 'عطل في بطارية السيارة قرب مفترق طريق الحامة، أحتاج مساعدة بكابل تشغيل.', phone: '55412098', lat: 33.8891, lng: 10.0522, createdAt: nowMs - 25 * 60 * 1000, status: 'open', claimedBy: '' },
+    { id: 'em-2', type: 'تسرب ماء', gov: 'قابس', desc: 'انفجار أنبوب ماء رئيسي أمام مدخل عمارة بحي الأمل 2، نحتاج سباك مستعجل.', phone: '22908711', lat: 33.8685, lng: 10.1125, createdAt: nowMs - 55 * 60 * 1000, status: 'open', claimedBy: '' },
+    { id: 'em-3', type: 'كهرباء', gov: 'صفاقس', desc: 'تلامس كهربائي في عداد المنزل بطريق العين كلم 4، نبحث عن كهربائي متاح فوراً.', phone: '98554012', lat: 34.7495, lng: 10.7311, createdAt: nowMs - 90 * 60 * 1000, status: 'open', claimedBy: '' }
   ];
 
   return {
     SUPABASE,
     VERSION,
+    OFFER_TTL_HOURS,
+    STORAGE_BUCKET,
     HR,
     TN_GOVERNORATES,
     MARKET_CATS,
