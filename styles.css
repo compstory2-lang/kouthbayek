@@ -1,14 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&display=swap');
 
 :root {
-  --kb-green: #0E5A3E;
-  --kb-green-dark: #0A422D;
-  --kb-green-soft: #EAF5F0;
-  --kb-bg: #F6F4EE;
+  --kb-green: #0D6857;
+  --kb-green-dark: #094D40;
+  --kb-green-soft: #E8F6F2;
+  --kb-bg: #F5F7F6;
   --kb-card: #FFFFFF;
-  --kb-ink: #14281E;
-  --kb-muted: #52675C;
-  --kb-border: #E2DDD0;
+  --kb-ink: #132A23;
+  --kb-muted: #556B64;
+  --kb-border: #E4EAE8;
 }
 
 * {
@@ -21,12 +21,14 @@ body {
   background: var(--kb-bg);
   color: var(--kb-ink);
   margin: 0;
-  padding-bottom: 86px;
+  padding-bottom: 92px;
   overflow-x: hidden;
 }
 
 .kb-header {
-  background: linear-gradient(135deg, #0E5A3E 0%, #15734F 100%);
+  background: linear-gradient(145deg, #0D6857 0%, #0A5446 100%);
+  border-bottom-left-radius: 26px;
+  border-bottom-right-radius: 26px;
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -47,7 +49,22 @@ body {
   background: var(--kb-green);
   color: #FFFFFF;
   border-color: var(--kb-green);
-  box-shadow: 0 3px 10px rgba(14, 90, 62, 0.22);
+  box-shadow: 0 3px 10px rgba(13, 104, 87, 0.22);
+}
+
+.kb-pill-red.active {
+  background: #C81E1E;
+  color: #FFFFFF;
+  border-color: #C81E1E;
+  box-shadow: 0 3px 10px rgba(200, 30, 30, 0.25);
+}
+
+.kb-cat-tile {
+  transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+}
+
+.kb-cat-tile:active {
+  transform: scale(0.97);
 }
 
 .kb-nav-btn {
@@ -55,23 +72,16 @@ body {
 }
 
 .kb-nav-btn.active {
-  color: var(--kb-green);
-  font-weight: 800;
+  color: #0D6857;
+  font-weight: 900;
 }
 
-.kb-nav-btn.active .kb-nav-dot {
-  opacity: 1;
-  transform: scale(1);
+.kb-nav-btn[data-tab="market"].active {
+  color: #D97706;
 }
 
-.kb-nav-dot {
-  width: 22px;
-  height: 3px;
-  border-radius: 999px;
-  background: var(--kb-green);
-  opacity: 0;
-  transform: scale(0.4);
-  transition: all 0.18s ease;
+.kb-nav-btn[data-tab="emergency"].active {
+  color: #DC2626;
 }
 
 .leaflet-container {
@@ -92,6 +102,6 @@ body {
 }
 
 .kb-modal-backdrop {
-  background: rgba(10, 30, 20, 0.56);
+  background: rgba(10, 30, 24, 0.56);
   backdrop-filter: blur(3px);
 }

@@ -1,4 +1,4 @@
-// خوذ بايك — منطق الواجهة والأحداث والتبويبات الخمسة (v1.1-TN)
+// خوذ بايك — منطق الواجهة والأحداث والشبكة الثنائية للفئات (v1.2-TN)
 (() => {
   'use strict';
 
@@ -15,7 +15,10 @@
     userCoords: null,
     marketSearch: '',
     marketCat: 'all',
+    showMarketCatGrid: false,
+    marketLimit: 15,
     craftSearch: '',
+    craftGroup: 'all',
     craftCat: 'all',
     emergCat: 'all',
     mapLayers: { market: true, crafts: true, emergency: true },
@@ -23,12 +26,12 @@
     crafts: D.lsGet(D.STORE_KEYS.crafts, null) || C.SEED_CRAFTS.slice(),
     emergencies: D.lsGet(D.STORE_KEYS.emergencies, null) || C.SEED_EMERGENCIES.slice(),
     claimedEmergencies: D.lsGet(D.STORE_KEYS.claimed, []),
-    authUser: null, // جلسة Google من Supabase Auth
-    account: D.lsGet(D.STORE_KEYS.account, null), // الحساب المفعّل برقم الهاتف التونسي
+    authUser: null,
+    account: D.lsGet(D.STORE_KEYS.account, null),
     pickerCoords: { lat: 33.8815, lng: 10.0982 },
     offerCoords: null,
-    pendingOfferPhoto: null, // { dataUrl, blob, sizeKb }
-    reportTarget: null // { type, id, title }
+    pendingOfferPhoto: null,
+    reportTarget: null
   };
 
   let toastTimer = null;
@@ -91,27 +94,67 @@
       .map((c) => `<option value="${D.escHtml(c.id)}">${c.icon} ${D.escHtml(c.label)}</option>`).join('');
   }
 
+  // ==================== 2-COLUMN CATEGORY TILE GRIDS (MATCHES SCREENSHOTS) ====================
   function renderCategoryBars() {
-    $('marketCatBar').innerHTML = C.MARKET_CATS.map((c) => `
-      <button type="button" data-market-cat="${D.escHtml(c.id)}" class="kb-pill ${state.marketCat === c.id ? 'active' : 'bg-white text-emerald-950 border-[#DDD7C8]'} rounded-full border px-3 py-1.5 text-xs font-extrabold">
-        ${c.icon} ${D.escHtml(c.label)}
-      </button>
-    `).join('');
+    // 1. Market 2-Column Tiles with live offer counts
+    const geoOffers = state.offers.filter((o) => o.status !== 'sold' && (!o.expiresAt || o.expiresAt > Date.now()) && matchesGeo(o));
+    $('marketCatBar').innerHTML = C.MARKET_CATS.filter((c) => c.id !== 'all').map((c) => {
+      const cnt = geoOffers.filter((o) => o.cat === c.id).length;
+      const isSelected = state.marketCat === c.id;
+      const hasAny = cnt > 0;
+      const tileCls = isSelected
+        ? 'border-2 border-[#0D6857] bg-[#E8F6F2]'
+        : (hasAny ? 'border border-amber-300 bg-amber-50/40' : 'border border-[#E4EAE8] bg-white');
+      const pillCls = hasAny ? 'bg-amber-100 text-amber-900' : 'bg-slate-100 text-slate-500';
+      return `
+        <button type="button" data-market-cat="${D.escHtml(c.id)}" class="kb-cat-tile rounded-3xl ${tileCls} p-4 text-center shadow-sm flex flex-col items-center justify-center gap-2">
+          <span class="text-3xl leading-none">${c.icon}</span>
+          <span class="text-xs sm:text-sm font-black text-[#132A23] leading-snug">${D.escHtml(c.label)}</span>
+          <span class="rounded-full ${pillCls} px-3 py-0.5 text-[11px] font-extrabold">${cnt} عرض اليوم</span>
+        </button>
+      `;
+    }).join('');
 
-    $('craftCatBar').innerHTML = C.CRAFT_CATS.map((c) => `
-      <button type="button" data-craft-cat="${D.escHtml(c.id)}" class="kb-pill ${state.craftCat === c.id ? 'active' : 'bg-white text-emerald-950 border-[#DDD7C8]'} rounded-full border px-3 py-1.5 text-xs font-extrabold">
-        ${c.icon} ${D.escHtml(c.label)}
-      </button>
-    `).join('');
+    // 2. Crafts Group Pills
+    const totalSpecs = C.CRAFT_CATS.filter((c) => c.id !== 'all').length;
+    $('craftGroupBar').innerHTML = C.CRAFT_GROUPS.map((g) => {
+      const lbl = g.id === 'all' ? `${g.label} (${totalSpecs})` : `${g.icon} ${g.label}`;
+      return `
+        <button type="button" data-craft-group="${D.escHtml(g.id)}" class="kb-pill ${state.craftGroup === g.id ? 'active' : 'bg-white text-[#132A23] border-[#DCE4E1]'} rounded-full border px-3.5 py-1.5 text-xs font-extrabold">
+          ${D.escHtml(lbl)}
+        </button>
+      `;
+    }).join('');
 
+    // 3. Crafts 2-Column Specialty Tiles with live craftsman counts
+    const geoCrafts = state.crafts.filter((c) => matchesGeo(c));
+    const visibleSpecs = C.CRAFT_CATS.filter((c) => c.id !== 'all' && (state.craftGroup === 'all' || c.group === state.craftGroup));
+    $('craftCatBar').innerHTML = visibleSpecs.map((c) => {
+      const cnt = geoCrafts.filter((x) => x.spec === c.id).length;
+      const isSelected = state.craftCat === c.id;
+      const hasAny = cnt > 0;
+      const tileCls = isSelected
+        ? 'border-2 border-[#0D6857] bg-[#E8F6F2]'
+        : (hasAny ? 'border border-emerald-300 bg-emerald-50/40' : 'border border-[#E4EAE8] bg-white');
+      const pillCls = hasAny ? 'bg-emerald-100 text-emerald-900' : 'bg-slate-100 text-slate-500';
+      return `
+        <button type="button" data-craft-cat="${D.escHtml(c.id)}" class="kb-cat-tile rounded-3xl ${tileCls} p-4 text-center shadow-sm flex flex-col items-center justify-center gap-2">
+          <span class="text-3xl leading-none">${c.icon}</span>
+          <span class="text-xs sm:text-sm font-black text-[#132A23] leading-snug">${D.escHtml(c.label)}</span>
+          <span class="rounded-full ${pillCls} px-3 py-0.5 text-[11px] font-extrabold">${cnt} عرض اليوم</span>
+        </button>
+      `;
+    }).join('');
+
+    // 4. Emergency Filter Pills
     $('emergCatBar').innerHTML = C.EMERG_CATS.map((c) => `
-      <button type="button" data-emerg-cat="${D.escHtml(c.id)}" class="kb-pill ${state.emergCat === c.id ? 'active' : 'bg-white text-rose-900 border-rose-200'} rounded-full border px-3 py-1.5 text-xs font-extrabold">
+      <button type="button" data-emerg-cat="${D.escHtml(c.id)}" class="kb-pill kb-pill-red ${state.emergCat === c.id ? 'active' : 'bg-white text-[#132A23] border-slate-200'} rounded-full border px-3.5 py-1.5 text-xs font-extrabold">
         ${c.icon} ${D.escHtml(c.label)}
       </button>
     `).join('');
   }
 
-  // ==================== MARKET (SORTED STRICTLY NEAREST-FIRST) ====================
+  // ==================== MARKET (SORTED NEAREST-FIRST + MAGAZINE CARDS) ====================
   function getFilteredOffers() {
     const q = state.marketSearch.trim().toLowerCase();
     return state.offers.filter((o) => {
@@ -135,56 +178,78 @@
 
   function renderMarket() {
     const list = getFilteredOffers();
-    const totalActive = state.offers.filter((o) => o.status !== 'sold' && (!o.expiresAt || o.expiresAt > Date.now())).length;
-    $('statOffersCount').textContent = `${totalActive} عرض سارٍ`;
+    const totalActive = state.offers.filter((o) => o.status !== 'sold' && (!o.expiresAt || o.expiresAt > Date.now()) && matchesGeo(o)).length;
+    $('statOffersCount').textContent = String(totalActive);
     $('marketResultCount').textContent = `${list.length} عرض • الأقرب أولاً`;
+
+    $('marketCatGridWrap').classList.toggle('hidden', !state.showMarketCatGrid);
+    const activeChip = $('marketActiveCatChip');
+    if (state.marketCat !== 'all') {
+      const ci = D.getMarketCatInfo(state.marketCat);
+      $('marketActiveCatLbl').textContent = `${ci.icon} ${ci.label}`;
+      activeChip.classList.remove('hidden');
+    } else {
+      activeChip.classList.add('hidden');
+    }
 
     const box = $('marketList');
     if (!list.length) {
       box.innerHTML = `
-        <div class="rounded-2xl border border-dashed border-[#D6CFC0] bg-white p-6 text-center space-y-2">
-          <div class="text-2xl">🛒</div>
-          <p class="text-xs font-extrabold text-slate-600">لا توجد عروض مطابقة في «${D.escHtml(state.gov)}» بهذا الفلتر حالياً.</p>
-          <button type="button" data-expand-all="1" class="rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-extrabold text-emerald-800 hover:bg-emerald-100">عرض كل تونس</button>
+        <div class="rounded-3xl border border-dashed border-[#CFD9D5] bg-white p-6 text-center space-y-2">
+          <div class="text-2xl">🧺</div>
+          <p class="text-xs font-extrabold text-slate-600">لا توجد عروض مطابقة في «${D.escHtml(state.gov)}» حالياً.</p>
+          <button type="button" data-expand-all="1" class="rounded-xl bg-emerald-50 px-3.5 py-1.5 text-xs font-extrabold text-[#0D6857] hover:bg-emerald-100">عرض كل تونس</button>
         </div>
       `;
       return;
     }
 
-    box.innerHTML = list.map((o) => {
+    const visibleList = list.slice(0, state.marketLimit);
+    const cardsHtml = visibleList.map((o, idx) => {
       const cat = D.getMarketCatInfo(o.cat);
       const ph = D.cleanPhone(o.phone);
       const dist = getDistBadge(o);
       const owner = isOfferOwner(o);
+      const isClosest = idx === 0;
+      const cardBorder = isClosest ? 'border-2 border-amber-400/90 shadow-md' : 'border border-[#E4EAE8] shadow-sm';
+      const topBadge = isClosest
+        ? `<span class="inline-flex items-center gap-1 rounded-full bg-amber-100/90 border border-amber-200 px-3 py-1 text-[11px] font-black text-amber-900">⭐ الأقرب إليك</span>`
+        : `<span class="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200/80 px-3 py-1 text-[11px] font-black text-amber-950">${cat.icon} ${D.escHtml(cat.label)}</span>`;
       const imgBlock = o.imageUrl
-        ? `<img src="${D.escHtml(o.imageUrl)}" alt="${D.escHtml(o.title)}" loading="lazy" class="h-44 w-full rounded-xl object-cover border border-[#EAE5D8]" />`
-        : '';
+        ? `<div class="overflow-hidden rounded-2xl border border-[#EAE5D8] bg-slate-100"><img src="${D.escHtml(o.imageUrl)}" alt="${D.escHtml(o.title)}" loading="lazy" decoding="async" class="h-52 w-full object-cover" /></div>`
+        : `<div class="flex h-36 w-full flex-col items-center justify-center rounded-2xl border border-[#EAE5D8] bg-gradient-to-br from-[#E8F6F2] via-[#F7F9F8] to-[#FEF3C7]/60 text-center px-4">
+             <div class="text-4xl">${cat.icon}</div>
+             <div class="mt-1.5 text-xs font-extrabold text-[#0D6857]/80">${D.escHtml(cat.label)} • ${D.escHtml(o.gov)}</div>
+           </div>`;
       return `
-        <article class="rounded-2xl border border-[#E2DDD0] bg-white p-3.5 shadow-sm space-y-2.5">
+        <article class="rounded-3xl ${cardBorder} bg-white p-4 space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            ${topBadge}
+            ${dist ? `<span class="shrink-0 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-black text-[#0D6857]">${D.escHtml(dist)}</span>` : ''}
+          </div>
+          <h3 class="text-base sm:text-lg font-black text-[#132A23] leading-snug">${D.escHtml(o.title)}</h3>
+          <div class="flex flex-wrap items-center gap-1.5 text-xs font-bold text-slate-600">
+            <span>${D.escHtml(o.seller)}</span>
+            <span class="inline-flex items-center gap-0.5 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-800">✅ موثّق</span>
+            <span>• 📍 ${D.escHtml(o.gov)}</span>
+            <span class="text-amber-800">• ⏱️ ${D.escHtml(D.formatRemaining(o.expiresAt))}</span>
+          </div>
           ${imgBlock}
-          <div class="flex items-start justify-between gap-2">
-            <div class="min-w-0">
-              <div class="flex flex-wrap items-center gap-1.5 mb-1">
-                <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-extrabold text-emerald-800">${cat.icon} ${D.escHtml(cat.label)}</span>
-                <span class="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-extrabold text-amber-900">⏱️ ${D.escHtml(D.formatRemaining(o.expiresAt))}</span>
-              </div>
-              <h3 class="text-sm font-black text-emerald-950 leading-snug">${D.escHtml(o.title)}</h3>
-              ${o.desc ? `<p class="mt-1 text-xs font-semibold text-slate-700 leading-relaxed">${D.escHtml(o.desc)}</p>` : ''}
-              <p class="mt-1 text-[11px] font-bold text-slate-500">📍 ${D.escHtml(o.gov)}${dist ? ' • ' + D.escHtml(dist) : ''} • ${D.escHtml(o.seller)}</p>
+          <div class="rounded-2xl border-r-4 border-amber-500 bg-[#FFF9EC] px-3.5 py-2.5 space-y-1">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-xs font-extrabold text-amber-950">💰 السعر:</span>
+              <span class="text-base font-black text-[#0D6857]">${D.escHtml(o.price)} د.ت</span>
             </div>
-            <div class="shrink-0 rounded-2xl bg-[#EAF5F0] px-3 py-1.5 text-center">
-              <div class="text-sm font-black text-[#0E5A3E]">${D.escHtml(o.price)}</div>
-              <div class="text-[10px] font-extrabold text-emerald-800">د.ت</div>
-            </div>
+            ${o.desc ? `<p class="text-xs font-bold text-slate-700 leading-relaxed">• ${D.escHtml(o.desc)}</p>` : ''}
           </div>
-          <div class="grid grid-cols-3 gap-1.5 pt-1 border-t border-slate-100">
-            <a href="tel:+216${ph}" class="flex items-center justify-center gap-1 rounded-xl bg-[#0E5A3E] py-2 text-xs font-extrabold text-white hover:bg-[#0A422D] transition"><span>📞</span><span>اتصال</span></a>
-            <a href="https://wa.me/216${ph}?text=${encodeURIComponent('مرحباً، بخصوص عرضك على خوذ بايك: ' + o.title)}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl bg-emerald-600 py-2 text-xs font-extrabold text-white hover:bg-emerald-700 transition"><span>💬</span><span>واتساب</span></a>
-            <button type="button" data-focus-map="market:${D.escHtml(o.id)}" class="flex items-center justify-center gap-1 rounded-xl border border-[#DDD7C8] bg-[#FAF9F5] py-2 text-xs font-extrabold text-emerald-950 hover:bg-emerald-50 transition"><span>🗺️</span><span>الخريطة</span></button>
+          <div class="grid grid-cols-3 gap-1.5 pt-1">
+            <a href="tel:+216${ph}" class="flex items-center justify-center gap-1 rounded-xl bg-[#0D6857] py-2.5 text-xs font-extrabold text-white hover:bg-[#094D40] transition"><span>📞</span><span>اتصال</span></a>
+            <a href="https://wa.me/216${ph}?text=${encodeURIComponent('مرحباً، بخصوص عرضك على خوذ بايك: ' + o.title)}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl bg-emerald-600 py-2.5 text-xs font-extrabold text-white hover:bg-emerald-700 transition"><span>💬</span><span>واتساب</span></a>
+            <button type="button" data-focus-map="market:${D.escHtml(o.id)}" class="flex items-center justify-center gap-1 rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] py-2.5 text-xs font-extrabold text-[#132A23] hover:bg-emerald-50 transition"><span>🗺️</span><span>الخريطة</span></button>
           </div>
-          <div class="flex flex-wrap items-center justify-between gap-1.5 pt-1 border-t border-slate-100/80 text-[11px] font-extrabold">
+          <div class="flex flex-wrap items-center justify-between gap-1.5 pt-1.5 border-t border-slate-100 text-[11px] font-extrabold">
             <div class="flex items-center gap-1.5">
-              <button type="button" data-share-offer="${D.escHtml(o.id)}" class="rounded-lg bg-slate-100 hover:bg-slate-200 px-2.5 py-1 text-slate-700 transition">📤 مشاركة العرض</button>
+              <button type="button" data-share-offer="${D.escHtml(o.id)}" class="rounded-lg bg-slate-100 hover:bg-slate-200 px-2.5 py-1 text-slate-700 transition">📤 مشاركة</button>
               <button type="button" data-report-offer="${D.escHtml(o.id)}" class="rounded-lg bg-rose-50 hover:bg-rose-100 px-2.5 py-1 text-rose-700 transition">🚩 إبلاغ</button>
             </div>
             ${owner ? `<button type="button" data-mark-sold="${D.escHtml(o.id)}" class="rounded-lg bg-amber-100 hover:bg-amber-200 border border-amber-300 px-2.5 py-1 text-amber-950 transition">✅ تم البيع</button>` : ''}
@@ -192,9 +257,13 @@
         </article>
       `;
     }).join('');
+    const moreBtn = list.length > state.marketLimit
+      ? `<button type="button" data-load-more-market="1" class="w-full rounded-2xl border border-[#0D6857] bg-white py-3 text-xs font-black text-[#0D6857] hover:bg-emerald-50 transition">⬇️ عرض المزيد (${list.length - state.marketLimit} عرض متبقٍ)</button>`
+      : '';
+    box.innerHTML = cardsHtml + moreBtn;
   }
 
-  // ==================== CRAFTSMEN (SORTED STRICTLY NEAREST-FIRST) ====================
+  // ==================== CRAFTSMEN ====================
   function getFilteredCrafts() {
     const q = state.craftSearch.trim().toLowerCase();
     return state.crafts.filter((c) => {
@@ -210,15 +279,17 @@
 
   function renderCrafts() {
     const list = getFilteredCrafts();
+    const specInfo = state.craftCat !== 'all' ? D.getCraftCatInfo(state.craftCat) : null;
+    $('craftListTitle').textContent = specInfo ? `${specInfo.icon} ${specInfo.label}` : '🛠️ أقرب الحرفيين المتاحين';
     $('craftResultCount').textContent = `${list.length} حرفي • الأقرب أولاً`;
 
     const box = $('craftList');
     if (!list.length) {
       box.innerHTML = `
-        <div class="rounded-2xl border border-dashed border-[#D6CFC0] bg-white p-6 text-center space-y-2">
+        <div class="rounded-3xl border border-dashed border-[#CFD9D5] bg-white p-6 text-center space-y-2">
           <div class="text-2xl">🛠️</div>
-          <p class="text-xs font-extrabold text-slate-600">لا يوجد حرفيون مطابقون في «${D.escHtml(state.gov)}» بهذا التخصص حالياً.</p>
-          <button type="button" data-expand-all="1" class="rounded-xl bg-blue-50 px-3 py-1.5 text-xs font-extrabold text-blue-800 hover:bg-blue-100">عرض كل تونس</button>
+          <p class="text-xs font-extrabold text-slate-600">لا يوجد حرفيون مسجّلون في هذا الاختصاص ضمن «${D.escHtml(state.gov)}» حالياً.</p>
+          <button type="button" data-expand-all="1" class="rounded-xl bg-emerald-50 px-3.5 py-1.5 text-xs font-extrabold text-[#0D6857]">عرض كل تونس</button>
         </div>
       `;
       return;
@@ -229,28 +300,25 @@
       const ph = D.cleanPhone(c.phone);
       const dist = getDistBadge(c);
       return `
-        <article class="rounded-2xl border border-[#E2DDD0] bg-white p-3.5 shadow-sm space-y-2.5">
-          <div>
-            <div class="flex flex-wrap items-center gap-1.5 mb-1">
-              <span class="rounded-full bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-extrabold text-blue-800">${sp.icon} ${D.escHtml(sp.label)}</span>
-              <span class="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-extrabold text-amber-900">⭐ ${Number(c.rating).toFixed(1)} (${c.reviews})</span>
-              ${dist ? `<span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-extrabold text-emerald-800">📍 ${D.escHtml(dist)}</span>` : ''}
-            </div>
-            <h3 class="text-sm font-black text-emerald-950 leading-snug">${D.escHtml(c.name)}</h3>
-            <p class="mt-0.5 text-[11px] font-bold text-slate-500">📍 ${D.escHtml(c.gov)} — ${D.escHtml(c.area)}</p>
-            <p class="mt-1 text-xs font-semibold text-slate-700">${D.escHtml(c.note)}</p>
+        <article class="rounded-3xl border border-[#E4EAE8] bg-white p-4 shadow-sm space-y-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-black text-[#0D6857]">${sp.icon} ${D.escHtml(sp.label)}</span>
+            ${dist ? `<span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-extrabold text-slate-700">📍 ${D.escHtml(dist)}</span>` : ''}
           </div>
+          <h3 class="text-sm sm:text-base font-black text-[#132A23]">${D.escHtml(c.name)}</h3>
+          <p class="text-xs font-bold text-slate-500">⭐ ${Number(c.rating).toFixed(1)} (${c.reviews}) • 📍 ${D.escHtml(c.gov)} — ${D.escHtml(c.area)}</p>
+          <p class="text-xs font-semibold text-slate-700">${D.escHtml(c.note)}</p>
           <div class="grid grid-cols-3 gap-1.5 pt-1 border-t border-slate-100">
-            <a href="tel:+216${ph}" class="flex items-center justify-center gap-1 rounded-xl bg-blue-700 py-2 text-xs font-extrabold text-white hover:bg-blue-800 transition"><span>📞</span><span>اتصال مباشر</span></a>
-            <a href="https://wa.me/216${ph}?text=${encodeURIComponent('مرحباً، وجدت رقمك على خوذ بايك وأحتاج خدمة: ' + sp.label)}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl bg-emerald-600 py-2 text-xs font-extrabold text-white hover:bg-emerald-700 transition"><span>💬</span><span>واتساب</span></a>
-            <button type="button" data-focus-map="crafts:${D.escHtml(c.id)}" class="flex items-center justify-center gap-1 rounded-xl border border-[#DDD7C8] bg-[#FAF9F5] py-2 text-xs font-extrabold text-emerald-950 hover:bg-blue-50 transition"><span>🗺️</span><span>الموقع</span></button>
+            <a href="tel:+216${ph}" class="flex items-center justify-center gap-1 rounded-xl bg-[#0D6857] py-2 text-xs font-extrabold text-white"><span>📞</span><span>اتصال</span></a>
+            <a href="https://wa.me/216${ph}?text=${encodeURIComponent('مرحباً، وجدت رقمك على خوذ بايك وأحتاج خدمة: ' + sp.label)}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl bg-emerald-600 py-2 text-xs font-extrabold text-white"><span>💬</span><span>واتساب</span></a>
+            <button type="button" data-focus-map="crafts:${D.escHtml(c.id)}" class="flex items-center justify-center gap-1 rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] py-2 text-xs font-extrabold text-[#132A23]"><span>🗺️</span><span>الموقع</span></button>
           </div>
         </article>
       `;
     }).join('');
   }
 
-  // ==================== EMERGENCIES (NEAREST-FIRST + CAREGUARD-STYLE CLAIM) ====================
+  // ==================== EMERGENCIES ====================
   function getFilteredEmergencies() {
     return state.emergencies.filter((e) => {
       if (e.status !== 'open') return false;
@@ -263,11 +331,10 @@
   function renderEmergencies() {
     const allOpen = state.emergencies.filter((e) => e.status === 'open').length;
     const list = getFilteredEmergencies();
+    $('emergBannerTitle').textContent = `🚨 طوارئ المواطنين 24/24 — ${state.gov}`;
     $('openEmergencyCounter').textContent = String(allOpen);
-    $('statEmergQuick').textContent = `${allOpen} بلاغ مفتوح`;
     $('navEmergBadge').textContent = String(allOpen);
 
-    // لوحة البلاغات التي استلمها المستخدم حالياً (مخفية عن الجميع وتبقى ظاهرة له فقط)
     const claimedWrap = $('myClaimedBox');
     if (state.claimedEmergencies.length) {
       claimedWrap.classList.remove('hidden');
@@ -281,7 +348,7 @@
             </div>
             <p class="text-xs font-semibold text-slate-700">${D.escHtml(e.desc)}</p>
             <div class="flex gap-1.5 pt-1">
-              ${ph ? `<a href="tel:+216${ph}" class="flex-1 rounded-lg bg-[#0E5A3E] py-1.5 text-center text-xs font-extrabold text-white">📞 اتصال (${D.escHtml(ph)})</a>` : ''}
+              ${ph ? `<a href="tel:+216${ph}" class="flex-1 rounded-lg bg-[#0D6857] py-1.5 text-center text-xs font-extrabold text-white">📞 اتصال (${D.escHtml(ph)})</a>` : ''}
               <a href="https://maps.google.com/?q=${e.lat},${e.lng}" target="_blank" rel="noopener" class="flex-1 rounded-lg bg-white border border-emerald-300 py-1.5 text-center text-xs font-extrabold text-emerald-900">🧭 فتح في الخرائط</a>
             </div>
           </div>
@@ -294,10 +361,9 @@
     const box = $('emergencyList');
     if (!list.length) {
       box.innerHTML = `
-        <div class="rounded-2xl border border-dashed border-rose-200 bg-white p-6 text-center space-y-2">
-          <div class="text-2xl">✅</div>
-          <p class="text-xs font-extrabold text-slate-600">لا توجد بلاغات طوارئ مفتوحة في «${D.escHtml(state.gov)}» حالياً.</p>
-          <button type="button" data-expand-all="1" class="rounded-xl bg-rose-50 px-3 py-1.5 text-xs font-extrabold text-rose-700 hover:bg-rose-100">عرض بلاغات كل تونس</button>
+        <div class="rounded-3xl border border-[#E4EAE8] bg-white p-6 text-center space-y-2 shadow-sm">
+          <p class="text-sm font-extrabold text-slate-600">لا توجد بلاغات طوارئ مفتوحة حالياً في نطاق ${D.escHtml(state.gov)}.</p>
+          <button type="button" data-expand-all="1" class="rounded-xl bg-rose-50 px-3.5 py-1.5 text-xs font-extrabold text-rose-700">عرض بلاغات كل تونس</button>
         </div>
       `;
       return;
@@ -307,7 +373,7 @@
       const ph = D.cleanPhone(e.phone);
       const dist = getDistBadge(e);
       return `
-        <article class="rounded-2xl border border-rose-200 bg-white p-3.5 shadow-sm space-y-2">
+        <article class="rounded-3xl border border-rose-200 bg-white p-4 shadow-sm space-y-2.5">
           <div class="flex items-start justify-between gap-2">
             <div class="flex flex-wrap items-center gap-1.5">
               <span class="rounded-full bg-rose-100 px-2.5 py-0.5 text-[11px] font-black text-rose-800">🚨 ${D.escHtml(e.type)}</span>
@@ -317,16 +383,16 @@
           </div>
           <p class="text-xs sm:text-sm font-bold text-slate-800 leading-relaxed">${D.escHtml(e.desc)}</p>
           <div class="flex flex-wrap items-center gap-1.5 pt-1 border-t border-rose-100">
-            ${ph ? `<a href="tel:+216${ph}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-rose-600 py-2 px-2.5 text-xs font-extrabold text-white hover:bg-rose-700"><span>📞</span><span>اتصال</span></a>` : ''}
-            <button type="button" data-focus-map="emergency:${D.escHtml(e.id)}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl border border-rose-200 bg-rose-50 py-2 px-2.5 text-xs font-extrabold text-rose-800 hover:bg-rose-100"><span>🗺️</span><span>الموقع</span></button>
-            <button type="button" data-claim-emerg="${D.escHtml(e.id)}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-[#0E5A3E] py-2 px-2.5 text-xs font-extrabold text-white hover:bg-[#0A422D]"><span>✅</span><span>استلام</span></button>
+            ${ph ? `<a href="tel:+216${ph}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-rose-600 py-2 px-2.5 text-xs font-extrabold text-white"><span>📞</span><span>اتصال</span></a>` : ''}
+            <button type="button" data-focus-map="emergency:${D.escHtml(e.id)}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl border border-rose-200 bg-rose-50 py-2 px-2.5 text-xs font-extrabold text-rose-800"><span>🗺️</span><span>الموقع</span></button>
+            <button type="button" data-claim-emerg="${D.escHtml(e.id)}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-[#0D6857] py-2 px-2.5 text-xs font-extrabold text-white"><span>✅</span><span>استلام</span></button>
           </div>
         </article>
       `;
     }).join('');
   }
 
-  // ==================== ACCOUNT (GOOGLE OAUTH + MANDATORY TN PHONE) ====================
+  // ==================== ACCOUNT ====================
   function renderAccount() {
     const authBox = $('accountGoogleBox');
     const phoneBox = $('accountPhoneStepBox');
@@ -353,8 +419,8 @@
       const myOffers = state.offers.filter((o) => isOfferOwner(o) && o.status !== 'sold');
       const myCrafts = state.crafts.filter((c) => D.cleanPhone(c.phone) === D.cleanPhone(acc.phone));
       const items = [
-        ...myOffers.map((o) => `<div class="flex items-center justify-between gap-2 rounded-xl bg-[#FAF9F5] border border-[#E2DDD0] px-3 py-2 text-emerald-950"><span class="truncate">🛒 ${D.escHtml(o.title)} (${D.escHtml(o.price)} د.ت)</span><button type="button" data-mark-sold="${D.escHtml(o.id)}" class="shrink-0 rounded-lg bg-amber-100 px-2 py-0.5 text-[10px] font-extrabold text-amber-950">✅ تم البيع</button></div>`),
-        ...myCrafts.map((c) => `<div class="rounded-xl bg-[#FAF9F5] border border-[#E2DDD0] px-3 py-2 text-emerald-950">🛠️ ${D.escHtml(c.name)} (${D.escHtml(c.gov)})</div>`)
+        ...myOffers.map((o) => `<div class="flex items-center justify-between gap-2 rounded-xl bg-[#F8FAF9] border border-[#E4EAE8] px-3 py-2 text-[#132A23]"><span class="truncate">🧺 ${D.escHtml(o.title)} (${D.escHtml(o.price)} د.ت)</span><button type="button" data-mark-sold="${D.escHtml(o.id)}" class="shrink-0 rounded-lg bg-amber-100 px-2 py-0.5 text-[10px] font-extrabold text-amber-950">✅ تم البيع</button></div>`),
+        ...myCrafts.map((c) => `<div class="rounded-xl bg-[#F8FAF9] border border-[#E4EAE8] px-3 py-2 text-[#132A23]">🛠️ ${D.escHtml(c.name)} (${D.escHtml(c.gov)})</div>`)
       ];
       $('myPostsList').innerHTML = items.length ? items.join('') : '<p class="text-slate-400">لم تنشر بعد أي عروض أو بطاقات بهذا الحساب.</p>';
       return;
@@ -362,7 +428,6 @@
 
     dashBox.classList.add('hidden');
     if (state.authUser) {
-      // مسجّل عبر Google لكنه لم يُكمل رقم الهاتف التونسي الإجباري بعد
       authBox.classList.add('hidden');
       phoneBox.classList.remove('hidden');
       $('googleSignedEmail').textContent = state.authUser.email || '';
@@ -373,12 +438,6 @@
       authBox.classList.remove('hidden');
       phoneBox.classList.add('hidden');
     }
-  }
-
-  function updateLocationHeader() {
-    const rMap = { gov: 'في ولايتي', '15': 'ضمن 15 كم', '50': 'ضمن 50 كم', '100': 'ضمن 100 كم', all: 'كل تونس' };
-    const gpsTag = state.userCoords ? ' (GPS)' : '';
-    $('locStatusTxt').textContent = `الولاية: ${state.gov}${gpsTag} • ${rMap[state.radius] || 'في ولايتي'} • الأقرب أولاً`;
   }
 
   function renderMapNow(focusTarget) {
@@ -394,7 +453,7 @@
   }
 
   function renderAll(mapFocus) {
-    updateLocationHeader();
+    $('locStatusTxt').textContent = `الولاية: ${state.gov}`;
     renderCategoryBars();
     renderMarket();
     renderCrafts();
@@ -416,8 +475,7 @@
   }
 
   function toggleVehicleFields() {
-    const isVeh = $('ofCat').value === 'vehicles';
-    $('vehicleSpecsBox').classList.toggle('hidden', !isVeh);
+    $('vehicleSpecsBox').classList.toggle('hidden', $('ofCat').value !== 'vehicles');
   }
 
   function openModal(id) {
@@ -452,37 +510,39 @@
     }
   }
 
-  function closeModal(id) {
-    $(id).classList.add('hidden');
-  }
+  function closeModal(id) { $(id).classList.add('hidden'); }
 
   function updateMapLayerButtons() {
     const styles = {
-      market: ['bg-emerald-600', 'text-white'],
+      market: ['bg-[#0D6857]', 'text-white'],
       crafts: ['bg-blue-700', 'text-white'],
       emergency: ['bg-rose-600', 'text-white']
     };
     document.querySelectorAll('[data-map-layer]').forEach((btn) => {
       const k = btn.dataset.mapLayer;
-      btn.classList.remove('bg-emerald-600', 'bg-blue-700', 'bg-rose-600', 'text-white', 'bg-white', 'text-slate-500');
+      btn.classList.remove('bg-[#0D6857]', 'bg-blue-700', 'bg-rose-600', 'text-white', 'bg-white', 'text-slate-500');
       if (state.mapLayers[k]) btn.classList.add(...styles[k]);
       else btn.classList.add('bg-white', 'text-slate-500');
     });
   }
 
   // ==================== EVENTS ====================
-  $('govSelect').addEventListener('change', (e) => {
+  $('govSelect').addEventListener('change', async (e) => {
     state.gov = e.target.value;
     state.userCoords = null;
+    state.marketLimit = 15;
     D.lsSet(D.STORE_KEYS.prefs, { gov: state.gov, radius: state.radius });
     renderAll();
     showToast(`📍 تم تغيير الولاية إلى ${state.gov}`);
+    if (await D.syncFromSupabase(state, true)) renderAll();
   });
 
-  $('radiusSelect').addEventListener('change', (e) => {
+  $('radiusSelect').addEventListener('change', async (e) => {
     state.radius = e.target.value;
+    state.marketLimit = 15;
     D.lsSet(D.STORE_KEYS.prefs, { gov: state.gov, radius: state.radius });
     renderAll();
+    if (await D.syncFromSupabase(state, true)) renderAll();
   });
 
   $('geoBtn').addEventListener('click', () => {
@@ -504,17 +564,32 @@
     );
   });
 
+  $('marketShowAllBtn').addEventListener('click', () => {
+    state.marketCat = 'all';
+    state.showMarketCatGrid = false;
+    renderAll();
+  });
+
+  $('marketToggleCatsBtn').addEventListener('click', () => {
+    state.showMarketCatGrid = !state.showMarketCatGrid;
+    $('marketCatGridWrap').classList.toggle('hidden', !state.showMarketCatGrid);
+  });
+
+  $('marketClearCatBtn').addEventListener('click', () => {
+    state.marketCat = 'all';
+    renderAll();
+  });
+
   $('marketSearch').addEventListener('input', (e) => { state.marketSearch = e.target.value; renderMarket(); });
   $('craftSearch').addEventListener('input', (e) => { state.craftSearch = e.target.value; renderCrafts(); });
   $('ofCat').addEventListener('change', toggleVehicleFields);
 
-  // ضغط صورة المنتوج/السيارة تلقائياً عبر HTML5 Canvas (< 100 KB)
   $('ofPhotoInput').addEventListener('change', async (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
-    $('ofPhotoStatus').textContent = '⏳ جاري ضغط الصورة لتخفيف الحجم...';
+    $('ofPhotoStatus').textContent = '⏳ جاري ضغط الصورة...';
     try {
-      const res = await D.compressImageFile(file, 820, 98000);
+      const res = await D.compressImageFile(file, 680, 55000);
       state.pendingOfferPhoto = res;
       $('ofPhotoPreview').src = res.dataUrl;
       $('ofPhotoPreview').classList.remove('hidden');
@@ -542,20 +617,38 @@
     if (navBtn) return switchTab(navBtn.dataset.tab);
 
     const mCat = e.target.closest('[data-market-cat]');
-    if (mCat) { state.marketCat = mCat.dataset.marketCat; renderCategoryBars(); renderMarket(); return; }
+    if (mCat) {
+      state.marketCat = mCat.dataset.marketCat;
+      state.showMarketCatGrid = false;
+      renderCategoryBars();
+      renderMarket();
+      return;
+    }
+
+    const cGrp = e.target.closest('[data-craft-group]');
+    if (cGrp) {
+      state.craftGroup = cGrp.dataset.craftGroup;
+      state.craftCat = 'all';
+      renderCategoryBars();
+      renderCrafts();
+      return;
+    }
 
     const cCat = e.target.closest('[data-craft-cat]');
-    if (cCat) { state.craftCat = cCat.dataset.craftCat; renderCategoryBars(); renderCrafts(); return; }
+    if (cCat) {
+      state.craftCat = state.craftCat === cCat.dataset.craftCat ? 'all' : cCat.dataset.craftCat;
+      renderCategoryBars();
+      renderCrafts();
+      $('craftListTitle').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
 
     const eCat = e.target.closest('[data-emerg-cat]');
     if (eCat) { state.emergCat = eCat.dataset.emergCat; renderCategoryBars(); renderEmergencies(); return; }
 
-    const qa = e.target.closest('[data-quick-action]');
-    if (qa) {
-      const act = qa.dataset.quickAction;
-      if (act === 'vehicles') { state.marketCat = 'vehicles'; renderCategoryBars(); renderMarket(); }
-      else if (act === 'livestock') { state.marketCat = 'livestock'; renderCategoryBars(); renderMarket(); }
-      else if (act === 'go-emergency') switchTab('emergency');
+    if (e.target.closest('[data-load-more-market]')) {
+      state.marketLimit += 15;
+      renderMarket();
       return;
     }
 
@@ -576,7 +669,6 @@
       return;
     }
 
-    // ✅ تم البيع (لصاحب الإعلان فقط)
     const soldBtn = e.target.closest('[data-mark-sold]');
     if (soldBtn) {
       const id = soldBtn.dataset.markSold;
@@ -588,21 +680,16 @@
       return;
     }
 
-    // 📤 مشاركة العرض
     const shareBtn = e.target.closest('[data-share-offer]');
     if (shareBtn) {
       const o = state.offers.find((x) => x.id === shareBtn.dataset.shareOffer);
       if (!o) return;
-      const text = `🛒 ${o.title}\n💰 السعر: ${o.price} د.ت — 📍 ${o.gov}\n📞 ${D.cleanPhone(o.phone)}\nعبر تطبيق خوذ بايك: ${window.location.href}`;
-      if (navigator.share) {
-        navigator.share({ title: o.title, text, url: window.location.href }).catch(() => {});
-      } else {
-        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
-      }
+      const text = `🧺 ${o.title}\n💰 السعر: ${o.price} د.ت — 📍 ${o.gov}\n📞 ${D.cleanPhone(o.phone)}\nعبر تطبيق خوذ بايك: ${window.location.href}`;
+      if (navigator.share) navigator.share({ title: o.title, text, url: window.location.href }).catch(() => {});
+      else window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
       return;
     }
 
-    // 🚩 إبلاغ عن إعلان
     const repBtn = e.target.closest('[data-report-offer]');
     if (repBtn) {
       const o = state.offers.find((x) => x.id === repBtn.dataset.reportOffer);
@@ -613,7 +700,6 @@
       return;
     }
 
-    // ✅ استلام بلاغ الطوارئ (ذرّياً مثل CareGuard فيختفي عن الجميع فوراً)
     const claimBtn = e.target.closest('[data-claim-emerg]');
     if (claimBtn) {
       if (!requireActiveAccount('⚠️ لاستلام بلاغ طارئ، فعّل حسابك عبر Google ورقم الهاتف أولاً.')) return;
@@ -688,7 +774,6 @@
     );
   });
 
-  // Google Sign-In Button (No PIN/Password)
   $('googleSignInBtn').addEventListener('click', async () => {
     try {
       showToast('⏳ جاري التحويل لحساب Google...');
@@ -698,13 +783,11 @@
     }
   });
 
-  // إكمال رقم الهاتف التونسي الإجباري لتفعيل الحساب وتجربة 60 يوماً
   $('phoneActivationForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const ph = D.cleanPhone($('accPhone').value);
     if (!D.isValidTnPhone(ph)) {
-      showToast('⚠️ رقم الهاتف التونسي إجباري ويجب أن يكون 8 أرقام صحيحة (يبدأ بـ 2 أو 3 أو 4 أو 5 أو 7 أو 9).');
-      return;
+      return showToast('⚠️ رقم الهاتف التونسي إجباري ويجب أن يكون 8 أرقام صحيحة.');
     }
     const name = $('accName').value.trim();
     if (!name) return showToast('⚠️ يرجى إدخال الاسم أو اسم الورشة.');
@@ -757,7 +840,6 @@
     showToast('✓ تم حذف حسابك وبياناتك نهائياً.');
   });
 
-  // نشر بلاغ طارئ
   $('emergencyForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const newEm = {
@@ -782,7 +864,6 @@
     showToast('🚨 تم نشر البلاغ الطارئ بنجاح!');
   });
 
-  // نشر عرض في السوق (مع الصورة المضغوطة + الوصف + السيارات + صلاحية 3 أيام)
   $('offerForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!requireActiveAccount()) return;
@@ -828,6 +909,10 @@
         expiresAt: Date.now() + C.OFFER_TTL_HOURS * C.HR
       };
       const res = await D.pushOffer(newOf);
+      if (!res.ok && res.error && res.error.includes('10')) {
+        showToast('⚠️ ' + res.error);
+        return;
+      }
       newOf.id = res.id || newOf.id;
       state.offers.unshift(newOf);
       D.lsSet(D.STORE_KEYS.offers, state.offers);
@@ -842,7 +927,6 @@
     }
   });
 
-  // تسجيل حرفي
   $('craftForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!requireActiveAccount()) return;
@@ -871,12 +955,10 @@
     showToast('✓ تمت إضافة بطاقتك في دليل الحرفيين!');
   });
 
-  // إرسال بلاغ عن إعلان مخالف
   $('reportForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!state.reportTarget) return;
-    const reason = $('reportReason').value;
-    await D.submitReport(state.reportTarget.type, state.reportTarget.id, reason, state.account && state.account.userId);
+    await D.submitReport(state.reportTarget.type, state.reportTarget.id, $('reportReason').value, state.account && state.account.userId);
     closeModal('reportModal');
     showToast('🚩 شكراً لك، تم إرسال البلاغ لمراجعة الإعلان.');
   });
@@ -885,17 +967,12 @@
     if (state.activeTab === 'market') renderMarket();
   }, 60000);
 
-  // ==================== INIT ====================
   async function init() {
     populateSelects();
     renderAll();
-
     if (D.isSupabaseConnected()) {
       $('syncBadge').textContent = '🟢 متصل بـ Supabase';
-      const [authUser, synced] = await Promise.all([
-        D.getAuthUser(),
-        D.syncFromSupabase(state)
-      ]);
+      const [authUser, synced] = await Promise.all([D.getAuthUser(), D.syncFromSupabase(state)]);
       if (authUser) {
         state.authUser = authUser;
         const cloudAcc = await D.fetchCloudAccount(authUser.id);

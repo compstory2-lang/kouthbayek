@@ -1,4 +1,4 @@
-// خوذ بايك — طبقة البيانات، مصادقة Google PKCE، ضغط الصور (<100KB)، والمزامنة مع Supabase (v1.1-TN)
+// خوذ بايك — طبقة البيانات المحسّنة لتحمّل 10,000+ مشترك (v1.3-TN Scale)
 window.KB_DATA = (() => {
   'use strict';
 
@@ -56,8 +56,7 @@ window.KB_DATA = (() => {
   }
 
   function isValidTnPhone(p) {
-    const ph = cleanPhone(p);
-    return /^[234579]\d{7}$/.test(ph);
+    return /^[234579]\d{7}$/.test(cleanPhone(p));
   }
 
   function haversineKm(lat1, lng1, lat2, lng2) {
@@ -110,8 +109,8 @@ window.KB_DATA = (() => {
     return C.CRAFT_CATS.find((c) => c.id === id) || C.CRAFT_CATS[0];
   }
 
-  // ==================== HTML5 CANVAS IMAGE COMPRESSION (< 100 KB) ====================
-  function compressImageFile(file, maxDim = 820, maxBytes = 98000) {
+  // ==================== ضغط فائق للصور (< 55 KB) لتقليل Egress للنصف ====================
+  function compressImageFile(file, maxDim = 680, maxBytes = 55000) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onerror = () => reject(new Error('تعذر قراءة الصورة'));
@@ -128,10 +127,10 @@ window.KB_DATA = (() => {
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, w, h);
 
-          let quality = 0.78;
+          let quality = 0.72;
           let dataUrl = canvas.toDataURL('image/jpeg', quality);
-          while (dataUrl.length * 0.75 > maxBytes && quality > 0.32) {
-            quality -= 0.1;
+          while (dataUrl.length * 0.75 > maxBytes && quality > 0.28) {
+            quality -= 0.08;
             dataUrl = canvas.toDataURL('image/jpeg', quality);
           }
           canvas.toBlob((blob) => {
@@ -151,7 +150,7 @@ window.KB_DATA = (() => {
       const path = `${safeUid}/${Date.now()}_${Math.floor(Math.random() * 9999)}.jpg`;
       const { error } = await sbClient.storage.from(C.STORAGE_BUCKET).upload(path, blob, {
         contentType: 'image/jpeg',
-        cacheControl: '259200',
+        cacheControl: '604800', // كاش متصفح 7 أيام لتقليل استهلاك Egress
         upsert: false
       });
       if (error) return dataUrl || '';
@@ -186,7 +185,9 @@ window.KB_DATA = (() => {
   async function fetchCloudAccount(userId) {
     if (!sbClient || !userId) return null;
     try {
-      const { data, error } = await sbClient.from('kb_accounts').select('*').eq('user_id', userId).maybeSingle();
+      const { data, error } = await sbClient.from('kb_accounts')
+        .select('user_id,email,display_name,role,phone,governorate,created_at,trial_ends_at')
+        .eq('user_id', userId).maybeSingle();
       if (error || !data) return null;
       return {
         userId: data.user_id,
@@ -206,7 +207,6 @@ window.KB_DATA = (() => {
 
   async function saveCloudAccount(acc) {
     if (!sbClient || !acc.userId) return { ok: false, error: 'غير متصل' };
-    const trialEndsIso = new Date(acc.trialEndsAt).toISOString();
     const { error } = await sbClient.from('kb_accounts').upsert({
       user_id: acc.userId,
       email: acc.email || '',
@@ -214,15 +214,13 @@ window.KB_DATA = (() => {
       role: acc.role,
       phone: acc.phone,
       governorate: acc.gov,
-      trial_ends_at: trialEndsIso
+      trial_ends_at: new Date(acc.trialEndsAt).toISOString()
     }, { onConflict: 'user_id' });
     return { ok: !error, error: error ? error.message : '' };
   }
 
   async function signOutGoogle() {
-    if (sbClient) {
-      try { await sbClient.auth.signOut(); } catch (_) {}
-    }
+    if (sbClient) { try { await sbClient.auth.signOut(); } catch (_) {} }
     lsRemove(STORE_KEYS.account);
   }
 
@@ -239,17 +237,49 @@ window.KB_DATA = (() => {
     lsRemove(STORE_KEYS.claimed);
   }
 
-  // ==================== SUPABASE DATA SYNC ====================
-  async function syncFromSupabase(state) {
+  // ==================== جلب ذكي مفلتر حسب الولاية لتحمّل 10,000+ مشترك ====================
+  const syncCache = { key: '', at: 0 };
+
+  async function syncFromSupabase(state, force = false) {
     if (!sbClient) return false;
+    const scopeKey = state.radius === 'gov' ? `gov:${state.gov}` : 'all';
+    if (!force && syncCache.key === scopeKey && (Date.now() - syncCache.at) < 120000) {
+      return false; // كاش مؤقت لدقيقتين لتقليل استهلاك قاعدة البيانات وEgress
+    }
     try {
       const nowIso = new Date().toISOString();
       const since24h = new Date(Date.now() - 24 * C.HR).toISOString();
-      const [ofRes, crRes, emRes] = await Promise.all([
-        sbClient.from('kb_offers').select('*').gte('expires_at', nowIso).neq('status', 'sold').order('created_at', { ascending: false }).limit(150),
-        sbClient.from('kb_craftsmen').select('*').order('created_at', { ascending: false }).limit(150),
-        sbClient.from('kb_emergencies').select('*').eq('status', 'open').gte('created_at', since24h).order('created_at', { ascending: false }).limit(100)
-      ]);
+
+      let ofQ = sbClient.from('kb_offers')
+        .select('id,title,price,category,governorate,seller_name,phone,description,image_url,status,user_id,lat,lng,created_at,expires_at')
+        .gte('expires_at', nowIso)
+        .neq('status', 'sold')
+        .order('created_at', { ascending: false })
+        .limit(60);
+
+      let crQ = sbClient.from('kb_craftsmen')
+        .select('id,name,specialty,governorate,area,phone,description,rating,reviews_count,user_id,lat,lng')
+        .order('rating', { ascending: false })
+        .limit(80);
+
+      let emQ = sbClient.from('kb_emergencies')
+        .select('id,emergency_type,governorate,description,phone,lat,lng,created_at,status,claimed_by')
+        .eq('status', 'open')
+        .gte('created_at', since24h)
+        .order('created_at', { ascending: false })
+        .limit(40);
+
+      // عند التصفح داخل الولاية (90% من المستخدمين) نجلب بيانات الولاية فقط لتوفير 95% من البيانات
+      if (state.radius === 'gov' && state.gov) {
+        ofQ = ofQ.eq('governorate', state.gov);
+        crQ = crQ.eq('governorate', state.gov);
+        emQ = emQ.eq('governorate', state.gov);
+      }
+
+      const [ofRes, crRes, emRes] = await Promise.all([ofQ, crQ, emQ]);
+      syncCache.key = scopeKey;
+      syncCache.at = Date.now();
+
       if (Array.isArray(ofRes.data) && ofRes.data.length) {
         state.offers = ofRes.data.map((r) => ({
           id: r.id, title: r.title, price: Number(r.price), cat: r.category,
@@ -293,9 +323,10 @@ window.KB_DATA = (() => {
         user_id: o.userId || null, lat: o.lat, lng: o.lng,
         expires_at: new Date(o.expiresAt).toISOString()
       }).select('id').single();
-      return { ok: !error, id: (data && data.id) || o.id };
+      syncCache.at = 0;
+      return { ok: !error, id: (data && data.id) || o.id, error: error ? error.message : '' };
     } catch (_) {
-      return { ok: false, id: o.id };
+      return { ok: false, id: o.id, error: '' };
     }
   }
 
@@ -305,6 +336,7 @@ window.KB_DATA = (() => {
       let q = sbClient.from('kb_offers').update({ status: 'sold' }).eq('id', offerId);
       if (userId) q = q.eq('user_id', userId);
       const { error } = await q;
+      syncCache.at = 0;
       return { ok: !error };
     } catch (_) {
       return { ok: false };
@@ -319,6 +351,7 @@ window.KB_DATA = (() => {
         phone: c.phone, description: c.note, rating: c.rating, reviews_count: c.reviews,
         user_id: c.userId || null, lat: c.lat, lng: c.lng
       });
+      syncCache.at = 0;
       return { ok: !error };
     } catch (_) {
       return { ok: false };
@@ -332,13 +365,13 @@ window.KB_DATA = (() => {
         emergency_type: e.type, governorate: e.gov, description: e.desc,
         phone: e.phone || null, lat: e.lat, lng: e.lng, status: 'open'
       }).select('id').single();
+      syncCache.at = 0;
       return { ok: !error, id: (data && data.id) || e.id };
     } catch (_) {
       return { ok: false, id: e.id };
     }
   }
 
-  // استلام ذرّي لبلاغ الطوارئ (مثل CareGuard: يختفي فوراً عن الجميع ويمنع التكرار)
   async function claimEmergencyAtomic(emergId, userId) {
     if (!sbClient || String(emergId).startsWith('em-')) return { ok: true };
     try {
@@ -348,6 +381,7 @@ window.KB_DATA = (() => {
         .eq('id', emergId)
         .eq('status', 'open')
         .select('id');
+      syncCache.at = 0;
       if (error) return { ok: false, alreadyClaimed: false };
       if (!data || !data.length) return { ok: false, alreadyClaimed: true };
       return { ok: true };

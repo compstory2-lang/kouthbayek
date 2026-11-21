@@ -1,4 +1,4 @@
-// خوذ بايك — الإعدادات والولايات التونسية الـ 24 والفئات والبيانات الابتدائية (v1.1-TN)
+// خوذ بايك — الإعدادات والولايات التونسية الـ 24 والفئات الكاملة (v1.2-TN)
 window.KB_CONFIG = (() => {
   'use strict';
 
@@ -7,8 +7,8 @@ window.KB_CONFIG = (() => {
     anonKey: 'sb_publishable_oW2H_1p5MCX82_bJOObyfA_AplDj2bk'
   };
 
-  const VERSION = 'v1.1-TN';
-  const OFFER_TTL_HOURS = 72; // 3 أيام (تختفي تلقائياً سواء بيعت أم لا)
+  const VERSION = 'v1.2-TN';
+  const OFFER_TTL_HOURS = 72; // 3 أيام
   const STORAGE_BUCKET = 'offer-images';
   const HR = 3600 * 1000;
 
@@ -39,31 +39,69 @@ window.KB_CONFIG = (() => {
     { id: 'Kebili', ar: 'قبلي', lat: 33.7044, lng: 8.9690 }
   ];
 
+  // فئات السوق اليومي (بنفس بطاقات الشبكة الثنائية المطلوبة + السيارات والدراجات)
   const MARKET_CATS = [
-    { id: 'all', label: 'الكل', icon: '✨' },
+    { id: 'all', label: 'كل العروض', icon: '✨' },
     { id: 'vehicles', label: 'سيارات ودراجات', icon: '🚗' },
-    { id: 'fast24', label: 'عروض اليوم السريعة', icon: '⚡' },
     { id: 'livestock', label: 'أغنام وأبقار ومواشي', icon: '🐑' },
-    { id: 'pets', label: 'حيوانات أليفة وطيور', icon: '🐦' },
-    { id: 'grocery', label: 'مواد غذائية ومنتجات الحومة', icon: '🧺' },
-    { id: 'farm', label: 'منتجات فلاحية وزيت وتمر', icon: '🫒' },
-    { id: 'tools', label: 'معدات وأدوات مستعملة', icon: '🔧' }
+    { id: 'fish', label: 'حوت وسردينة طازجة', icon: '🐟' },
+    { id: 'farm', label: 'عولة ومنتوجات فلاحية', icon: '🫒' },
+    { id: 'frip', label: 'نصب فريب وملابس', icon: '👕' },
+    { id: 'shoes', label: 'نصب أحذية وحقائب', icon: '👟' },
+    { id: 'homeware', label: 'أواني ولوازم منزلية', icon: '🍽️' },
+    { id: 'cleaning', label: 'مواد تنظيف وعطور', icon: '🧴' },
+    { id: 'phones', label: 'إكسسوارات هواتف', icon: '🔌' },
+    { id: 'sweets', label: 'أكل وحلويات منزلية', icon: '🍲' },
+    { id: 'sewing', label: 'خياطة وحرف منزلية', icon: '🧵' },
+    { id: 'meat', label: 'لحم ودواجن وبيض', icon: '🥩' },
+    { id: 'dairy', label: 'ألبان وأجبان', icon: '🧀' },
+    { id: 'bakery', label: 'مخابز وطابونة وملاوي', icon: '🥖' },
+    { id: 'grocery', label: 'عطّار ومواد غذائية', icon: '🛒' },
+    { id: 'streetfood', label: 'أكل شعبي', icon: '🥪' },
+    { id: 'used', label: 'مستعمل وأوكازيون', icon: '🛋️' },
+    { id: 'plants', label: 'مشاتل ونباتات', icon: '🪴' },
+    { id: 'gas', label: 'موزعون صغار (غاز ومواد)', icon: '🛢️' },
+    { id: 'pets', label: 'حيوانات أليفة وطيور', icon: '🐦' }
+  ];
+
+  // مجموعات وتخصصات الحرفيين الكاملة (كما في الصور)
+  const CRAFT_GROUPS = [
+    { id: 'all', label: 'الكل', icon: '' },
+    { id: 'home', label: 'صيانة المنزل', icon: '🏠' },
+    { id: 'auto', label: 'مهن السيارات', icon: '🚗' },
+    { id: 'build', label: 'البناء والأبواب', icon: '🧱' }
   ];
 
   const CRAFT_CATS = [
-    { id: 'all', label: 'الكل', icon: '🛠️' },
-    { id: 'ac', label: 'مكيفات وتبريد', icon: '❄️' },
-    { id: 'appliances', label: 'ثلاجات وغسالات', icon: '🧺' },
-    { id: 'plumbing', label: 'سباكة وصحية', icon: '🚰' },
-    { id: 'electric', label: 'كهرباء منزلية', icon: '⚡' },
-    { id: 'auto', label: 'ميكانيك وتشخيص سيارات', icon: '🚗' },
-    { id: 'build', label: 'بناء وترميم ودهان', icon: '🧱' }
+    { id: 'all', label: 'الكل', icon: '🛠️', group: 'all' },
+    { id: 'plumbing', label: 'سبّاك', icon: '🔧', group: 'home' },
+    { id: 'electric', label: 'كهربائي', icon: '⚡', group: 'home' },
+    { id: 'ac', label: 'فريغوريست وتبريد ومكيفات', icon: '❄️', group: 'home' },
+    { id: 'appliances', label: 'تصليح آلات غسيل وكهرومنزلية', icon: '🧺', group: 'home' },
+    { id: 'heating', label: 'شوفاج وسخان ماء', icon: '🔥', group: 'home' },
+    { id: 'build', label: 'بنّاء', icon: '🧱', group: 'build' },
+    { id: 'tiler', label: 'جليزي ورخّامي', icon: '⬜', group: 'build' },
+    { id: 'painter', label: 'دهّان', icon: '🖌️', group: 'build' },
+    { id: 'waterproof', label: 'عزل مائي', icon: '🌧️', group: 'build' },
+    { id: 'plaster', label: 'جبّاص', icon: '🏛️', group: 'build' },
+    { id: 'carpenter', label: 'نجّار', icon: '🪚', group: 'build' },
+    { id: 'alu', label: 'ألمنيوم و PVC', icon: '🪟', group: 'build' },
+    { id: 'shutters', label: 'ريدوات وأبواب أوتوماتيك', icon: '🚪', group: 'build' },
+    { id: 'welder', label: 'حدّاد وتلحيم', icon: '⚒️', group: 'build' },
+    { id: 'locksmith', label: 'فني أقفال', icon: '🔑', group: 'home' },
+    { id: 'glass', label: 'زجّاج', icon: '🪞', group: 'build' },
+    { id: 'tanks', label: 'تنظيف مواجل وخزانات', icon: '💧', group: 'home' },
+    { id: 'pest', label: 'مكافحة حشرات', icon: '🐜', group: 'home' },
+    { id: 'handyman', label: 'بريكولور', icon: '🔨', group: 'home' },
+    { id: 'worker', label: 'عامل يومي', icon: '👷', group: 'home' },
+    { id: 'auto', label: 'ميكانيكي سيارات', icon: '🚗', group: 'auto' },
+    { id: 'auto_elec', label: 'كهربائي سيارات', icon: '🔋', group: 'auto' }
   ];
 
   const EMERG_CATS = [
     { id: 'all', label: 'الكل', icon: '🚨' },
-    { id: 'كهرباء', label: 'كهرباء', icon: '⚡' },
-    { id: 'تسرب ماء', label: 'تسرب ماء', icon: '💧' },
+    { id: 'سبّاك طوارئ', label: 'سبّاك طوارئ', icon: '🔧' },
+    { id: 'كهربائي طوارئ', label: 'كهربائي طوارئ', icon: '⚡' },
     { id: 'تسرب غاز', label: 'تسرب غاز', icon: '🔥' },
     { id: 'عطل سيارة', label: 'عطل سيارة', icon: '🚗' },
     { id: 'مساعدة عاجلة', label: 'مساعدة عاجلة', icon: '🆘' }
@@ -72,11 +110,25 @@ window.KB_CONFIG = (() => {
   const nowMs = Date.now();
   const SEED_OFFERS = [
     {
+      id: 'of-fish1', title: 'سردينة طازجة ومرجان صيد الصباح — باب بحر قابس', price: 5.5, cat: 'fish',
+      gov: 'قابس', seller: 'عم الطاهر للحوت • كرهبة ونصبة متنقلة', phone: '55192340',
+      desc: 'سردينة طازجة: 5.500 د / كغ • مرجان صيد اليوم • التوصيل قرب باب بحر قابس.',
+      imageUrl: '', status: 'active', userId: '',
+      lat: 33.8861, lng: 10.1065, createdAt: nowMs - 1 * HR, expiresAt: nowMs + 71 * HR
+    },
+    {
+      id: 'of-liv1', title: 'علوش بركوس وعجول للتسمين والذبح — شنني قابس', price: 890, cat: 'livestock',
+      gov: 'قابس', seller: 'مزرعة الحاج مبروك للمواشي • مشروع فلاحي', phone: '98332145',
+      desc: 'علوش بركوس مسمّن علف طبيعي، المعاينة يومياً في شنني قابس.',
+      imageUrl: '', status: 'active', userId: '',
+      lat: 33.8762, lng: 10.0721, createdAt: nowMs - 2 * HR, expiresAt: nowMs + 70 * HR
+    },
+    {
       id: 'of-v1', title: 'رينو كليو 4 (Clio 4) بنزين بحالة ممتازة', price: 31500, cat: 'vehicles',
       gov: 'قابس', seller: 'أمين — قابس المدينة', phone: '98224110',
       desc: 'موديل 2017 • 138,000 كم • بنزين 4 خيول • مكيف بارد، دهان أصلي، أوراق خالصة.',
       imageUrl: '', status: 'active', userId: '',
-      lat: 33.8824, lng: 10.0975, createdAt: nowMs - 2 * HR, expiresAt: nowMs + 70 * HR
+      lat: 33.8824, lng: 10.0975, createdAt: nowMs - 3 * HR, expiresAt: nowMs + 69 * HR
     },
     {
       id: 'of-v2', title: 'دراجة نارية Forza 110cc + دراجة هوائية VTT', price: 2450, cat: 'vehicles',
@@ -90,42 +142,7 @@ window.KB_CONFIG = (() => {
       gov: 'قابس', seller: 'الحاج بلقاسم — شنني', phone: '22415678',
       desc: 'زيت زيتون عصرة باردة لموسم هذا العام، تعبئة نظيفة وتوصيل داخل قابس.',
       imageUrl: '', status: 'active', userId: '',
-      lat: 33.8762, lng: 10.0721, createdAt: nowMs - 2 * HR, expiresAt: nowMs + 70 * HR
-    },
-    {
-      id: 'of-2', title: 'علوش وطني مسمّن وزن ~38 كغ جاهز للذبح', price: 890, cat: 'livestock',
-      gov: 'قابس', seller: 'سوق الحامة للمواشي', phone: '98332145',
-      desc: 'علف طبيعي شعير وتبن، صحة ممتازة، المعاينة يومياً صباحاً ومساءً.',
-      imageUrl: '', status: 'active', userId: '',
-      lat: 33.8914, lng: 9.7963, createdAt: nowMs - 4 * HR, expiresAt: nowMs + 68 * HR
-    },
-    {
-      id: 'of-3', title: 'رمان قابس حلو + دقلة نور شمروخ (صندوق 5 كغ)', price: 32, cat: 'fast24',
-      gov: 'قابس', seller: 'نصبة واحة جارة', phone: '55829104',
-      desc: 'قطف اليوم صباحاً من الواحة، البيع بالجملة والتفصيل أمام سوق جارة.',
-      imageUrl: '', status: 'active', userId: '',
-      lat: 33.8849, lng: 10.1045, createdAt: nowMs - 1 * HR, expiresAt: nowMs + 71 * HR
-    },
-    {
-      id: 'of-4', title: 'آلة ثقب كهربائية Bosch مستعملة نظيفة جداً', price: 145, cat: 'tools',
-      gov: 'قابس', seller: 'نزار — حي الأمل', phone: '29640112',
-      desc: 'أصلية 650W مع الحقيبة ومجموعة ريش كاملة، قابلة للتجربة قبل الشراء.',
-      imageUrl: '', status: 'active', userId: '',
-      lat: 33.8695, lng: 10.1112, createdAt: nowMs - 7 * HR, expiresAt: nowMs + 65 * HR
-    },
-    {
-      id: 'of-5', title: 'عسل سدر حر + بسيسة قمح منزلية (كغ)', price: 48, cat: 'grocery',
-      gov: 'قابس', seller: 'دار البركة — قابس المدينة', phone: '52119044',
-      desc: 'منتوج منزلي 100% بدون إضافات، متوفر عبوات 500غ و1 كغ.',
-      imageUrl: '', status: 'active', userId: '',
-      lat: 33.8881, lng: 10.0951, createdAt: nowMs - 5 * HR, expiresAt: nowMs + 67 * HR
-    },
-    {
-      id: 'of-6', title: 'زوج عصافير كناري مغرّد بالقفص', price: 95, cat: 'pets',
-      gov: 'صفاقس', seller: 'مهدي — طريق قرمدة', phone: '24778123',
-      desc: 'صحة ممتازة مع قفص جديد وأكسسوارات كاملة.',
-      imageUrl: '', status: 'active', userId: '',
-      lat: 34.7521, lng: 10.7422, createdAt: nowMs - 3 * HR, expiresAt: nowMs + 69 * HR
+      lat: 33.8790, lng: 10.0810, createdAt: nowMs - 4 * HR, expiresAt: nowMs + 68 * HR
     },
     {
       id: 'of-v3', title: 'بيجو 206+ بنزين اقتصادية جداً', price: 21000, cat: 'vehicles',
@@ -133,27 +150,6 @@ window.KB_CONFIG = (() => {
       desc: 'موديل 2012 • 165,000 كم • بنزين 4 خيول • صيانة دورية منتظمة.',
       imageUrl: '', status: 'active', userId: '',
       lat: 34.7460, lng: 10.7555, createdAt: nowMs - 6 * HR, expiresAt: nowMs + 66 * HR
-    },
-    {
-      id: 'of-7', title: 'دقلة نور قبلي فرز أول مباشرة من المنتج (10 كغ)', price: 90, cat: 'farm',
-      gov: 'قبلي', seller: 'واحة دوز', phone: '97450221',
-      desc: 'دقلة نور شمروخ طرية ولذيذة، إمكانية الإرسال عبر اللواج لباقي الولايات.',
-      imageUrl: '', status: 'active', userId: '',
-      lat: 33.7092, lng: 8.9721, createdAt: nowMs - 6 * HR, expiresAt: nowMs + 66 * HR
-    },
-    {
-      id: 'of-8', title: 'بقر حلوب فريزيان بالضمان الصحي', price: 6200, cat: 'livestock',
-      gov: 'سيدي بوزيد', seller: 'فلاح الرقاب', phone: '50983321',
-      desc: 'إنتاج يومي ممتاز مع شهادة بيطرية محيّنة.',
-      imageUrl: '', status: 'active', userId: '',
-      lat: 35.0411, lng: 9.4910, createdAt: nowMs - 8 * HR, expiresAt: nowMs + 64 * HR
-    },
-    {
-      id: 'of-9', title: 'عرض اليوم: خبز طابونة وهريسة عربي طازجة', price: 12, cat: 'fast24',
-      gov: 'تونس', seller: 'كوشة باب سويقة', phone: '21560987',
-      desc: 'طازج يومياً من الساعة 7 صباحاً حتى نفاد الكمية.',
-      imageUrl: '', status: 'active', userId: '',
-      lat: 36.8091, lng: 10.1684, createdAt: nowMs - 2 * HR, expiresAt: nowMs + 70 * HR
     }
   ];
 
@@ -161,31 +157,17 @@ window.KB_CONFIG = (() => {
     { id: 'cr-1', name: 'المعلم سامي للتبريد والمكيفات', spec: 'ac', gov: 'قابس', area: 'قابس المدينة', rating: 4.9, reviews: 38, phone: '98412230', note: 'تركيب وصيانة وتنظيف وشحن غاز جميع المكيفات — تنقّل سريع', lat: 33.8832, lng: 10.0998 },
     { id: 'cr-2', name: 'ورشة النور للكهرباء المنزلية', spec: 'electric', gov: 'قابس', area: 'حي الأمل', rating: 4.8, reviews: 24, phone: '22671190', note: 'كشف أعطال الديجنكتور، تركيب طابلو كهربائي، تدخل عاجل', lat: 33.8712, lng: 10.1078 },
     { id: 'cr-3', name: 'عمّي فتحي للسباكة والصحية', spec: 'plumbing', gov: 'قابس', area: 'غنوش', rating: 4.7, reviews: 31, phone: '55109843', note: 'إصلاح تسربات المياه، تركيب سخان ماء (شوفان)، شبكات صحية', lat: 33.9382, lng: 10.0652 },
-    { id: 'cr-4', name: 'كراج الأمان ميكانيك وتشخيص', spec: 'auto', gov: 'قابس', area: 'طريق مدنين', rating: 4.9, reviews: 52, phone: '29884512', note: 'تشخيص إلكتروني بالديانوستيك (OBD)، ميكانيك عام وتدخل على الطريق', lat: 33.8620, lng: 10.1011 },
-    { id: 'cr-5', name: 'فني صيانة ثلاجات وغسالات أوتوماتيك', spec: 'appliances', gov: 'قابس', area: 'شنني النحال', rating: 4.6, reviews: 19, phone: '52774102', note: 'إصلاح في المنزل للغسالات والثلاجات مع ضمان على قطع الغيار', lat: 33.8794, lng: 10.0789 },
-    { id: 'cr-6', name: 'مقاول بناء وترميم ودهان عصري', spec: 'build', gov: 'صفاقس', area: 'طريق تنيور', rating: 4.8, reviews: 27, phone: '97223418', note: 'تبييض، جص ديكور، عزل أسطح ضد الرطوبة، دهان واجهات', lat: 34.7610, lng: 10.7510 },
-    { id: 'cr-7', name: 'ورشة التبريد السريع — مدنين', spec: 'ac', gov: 'مدنين', area: 'وسط المدينة', rating: 4.7, reviews: 15, phone: '23991045', note: 'صيانة مكيفات المنازل والمحلات التجارية 7/7', lat: 33.3562, lng: 10.5021 },
-    { id: 'cr-8', name: 'كهرباء وتشخيص سيارات — تونس', spec: 'auto', gov: 'تونس', area: 'المرناقية / باردو', rating: 4.9, reviews: 64, phone: '98711203', note: 'تشخيص إلكتروني وبرمجة مفاتيح وتدخل سريع داخل تونس الكبرى', lat: 36.8122, lng: 10.1411 }
+    { id: 'cr-4', name: 'كراج الأمان ميكانيك وتشخيص', spec: 'auto', gov: 'قابس', area: 'طريق مدنين', rating: 4.9, reviews: 52, phone: '29884512', note: 'تشخيص إلكتروني بالديانوستيك (OBD)، ميكانيك عام وتدخل على الطريق', lat: 33.8620, lng: 10.1011 }
   ];
 
   const SEED_EMERGENCIES = [
     { id: 'em-1', type: 'عطل سيارة', gov: 'قابس', desc: 'عطل في بطارية السيارة قرب مفترق طريق الحامة، أحتاج مساعدة بكابل تشغيل.', phone: '55412098', lat: 33.8891, lng: 10.0522, createdAt: nowMs - 25 * 60 * 1000, status: 'open', claimedBy: '' },
-    { id: 'em-2', type: 'تسرب ماء', gov: 'قابس', desc: 'انفجار أنبوب ماء رئيسي أمام مدخل عمارة بحي الأمل 2، نحتاج سباك مستعجل.', phone: '22908711', lat: 33.8685, lng: 10.1125, createdAt: nowMs - 55 * 60 * 1000, status: 'open', claimedBy: '' },
-    { id: 'em-3', type: 'كهرباء', gov: 'صفاقس', desc: 'تلامس كهربائي في عداد المنزل بطريق العين كلم 4، نبحث عن كهربائي متاح فوراً.', phone: '98554012', lat: 34.7495, lng: 10.7311, createdAt: nowMs - 90 * 60 * 1000, status: 'open', claimedBy: '' }
+    { id: 'em-2', type: 'سبّاك طوارئ', gov: 'قابس', desc: 'انفجار أنبوب ماء رئيسي أمام مدخل عمارة بحي الأمل 2، نحتاج سباك مستعجل.', phone: '22908711', lat: 33.8685, lng: 10.1125, createdAt: nowMs - 55 * 60 * 1000, status: 'open', claimedBy: '' }
   ];
 
   return {
-    SUPABASE,
-    VERSION,
-    OFFER_TTL_HOURS,
-    STORAGE_BUCKET,
-    HR,
-    TN_GOVERNORATES,
-    MARKET_CATS,
-    CRAFT_CATS,
-    EMERG_CATS,
-    SEED_OFFERS,
-    SEED_CRAFTS,
-    SEED_EMERGENCIES
+    SUPABASE, VERSION, OFFER_TTL_HOURS, STORAGE_BUCKET, HR,
+    TN_GOVERNORATES, MARKET_CATS, CRAFT_GROUPS, CRAFT_CATS, EMERG_CATS,
+    SEED_OFFERS, SEED_CRAFTS, SEED_EMERGENCIES
   };
 })();
