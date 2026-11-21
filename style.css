@@ -33,7 +33,7 @@ body {
 }
 
 body {
-  padding-bottom: 86px;
+  padding-bottom: 88px;
 }
 
 .hidden {
@@ -87,6 +87,12 @@ body {
   font-size: 0.76rem;
   color: rgba(255, 255, 255, 0.88);
   margin-top: 2px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .chip-btn {
@@ -515,7 +521,8 @@ body {
 }
 
 /* النماذج وحسابي */
-.card-box h3 {
+.card-box h3,
+.card-box h4 {
   font-size: 0.98rem;
   margin-bottom: 6px;
 }
