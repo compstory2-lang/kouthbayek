@@ -4,8 +4,8 @@ window.KB_CONFIG = (() => {
 
   // عند إنشاء مشروع Supabase الخاص بـ «خوذ بايك»، ضع الرابط والمفتاح هنا
   const SUPABASE = {
-    url: '',
-    anonKey: ''
+    url: 'https://tlgfwkbsgaiyylhhmywv.supabase.co',
+    anonKey: 'sb_publishable_oW2H_1p5MCX82_bJOObyfA_AplDj2bk'
   };
 
   const VERSION = 'v1.0-TN';
