@@ -7,7 +7,7 @@
   <meta name="description" content="منصة القرب التونسية للحرفيين، تجار الحومة، والمواشي وطوارئ المواطنين 24/24 عبر الولايات التونسية الـ 24." />
   <meta name="theme-color" content="#0f766e" />
   <link rel="manifest" href="./manifest.json" />
-  <link rel="stylesheet" href="./css/style.css" />
+  <link rel="stylesheet" href="./style.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
@@ -116,118 +116,4 @@
       <div id="mapSelectedCard" class="map-selected-card hidden"></div>
     </section>
 
-    <!-- تبويب 5: حسابي (المعلن / الحرفي) -->
-    <section id="tab-account" class="tab-panel">
-      <div class="section-head">
-        <h2>👤 حسابي (معلن / حرفي)</h2>
-        <span class="badge-trial">60 يوماً مجانية</span>
-      </div>
-
-      <div id="accountAuthBox" class="card-box">
-        <h3>تسجيل الدخول أو إنشاء حساب معلن</h3>
-        <p class="muted">التصفح مجاني للجميع. للمعلنين والحرفيين: 60 يوماً مجانية تبدأ من تاريخ تسجيلك.</p>
-        <div class="form-group">
-          <label for="authPhone">رقم الهاتف التونسي (8 أرقام)</label>
-          <input type="tel" id="authPhone" maxlength="8" placeholder="مثال: 22123456" inputmode="numeric" />
-        </div>
-        <div class="form-group">
-          <label for="authPin">الرمز السري (4 أرقام على الأقل)</label>
-          <input type="password" id="authPin" maxlength="12" placeholder="••••" inputmode="numeric" />
-        </div>
-        <button id="btnAuthSubmit" class="primary-btn full-width">🔓 دخول / إنشاء حساب معلن</button>
-      </div>
-
-      <div id="accountDashboard" class="hidden"></div>
-    </section>
-  </main>
-
-  <footer class="app-footer">
-    <span>© خوذ بايك — دليل الحرفيين وطوارئ 24/24</span>
-    <div>
-      <button id="btnTerms" class="link-btn">⚖️ شروط الاستخدام وإخلاء المسؤولية</button>
-    </div>
-  </footer>
-
-  <nav class="bottom-nav">
-    <button class="nav-btn active" data-tab="market">
-      <span>🛒</span>
-      <small>السوق</small>
-    </button>
-    <button class="nav-btn" data-tab="services">
-      <span>🛠️</span>
-      <small>الحرفيون</small>
-    </button>
-    <button class="nav-btn nav-emergency" data-tab="emergency">
-      <span>🚨</span>
-      <small>طوارئ</small>
-    </button>
-    <button class="nav-btn" data-tab="map">
-      <span>🗺️</span>
-      <small>الخريطة</small>
-    </button>
-    <button class="nav-btn" data-tab="account">
-      <span>👤</span>
-      <small>حسابي</small>
-    </button>
-  </nav>
-
-  <!-- نافذة بلاغ طارئ -->
-  <div id="emergencyModal" class="modal-backdrop hidden">
-    <div class="modal-card">
-      <div class="modal-head">
-        <h3>🚨 نشر بلاغ طارئ مستعجل</h3>
-        <button class="close-modal" data-close="emergencyModal">✕</button>
-      </div>
-      <form id="emergencyForm">
-        <div class="form-group">
-          <label for="emCategory">نوع الطارئ</label>
-          <select id="emCategory" required>
-            <option value="كهرباء خطيرة / انقطاع">⚡ كهرباء خطيرة / انقطاع</option>
-            <option value="تسرب ماء / انفجار قناة">💧 تسرب ماء / انفجار قناة</option>
-            <option value="تسرب غاز / رائحة غاز">🔥 تسرب غاز / رائحة غاز</option>
-            <option value="عطل سيارة / بنشر على الطريق">🚗 عطل سيارة / بنشر على الطريق</option>
-            <option value="مساعدة عاجلة / حالة إنسانية">🆘 مساعدة عاجلة / حالة إنسانية</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="emGov">الولاية</label>
-          <select id="emGov" required></select>
-        </div>
-        <div class="form-group">
-          <label for="emDesc">وصف مختصر للحالة</label>
-          <textarea id="emDesc" rows="3" required placeholder="مثال: تسرب ماء قوي أمام الباب الرئيسي أو سيارة متوقفة..."></textarea>
-        </div>
-        <div class="form-group">
-          <label for="emPhone">رقم الهاتف للتواصل (اختياري — يُخفى تلقائياً عند إغلاق البلاغ)</label>
-          <input type="tel" id="emPhone" maxlength="8" placeholder="مثال: 98123456" inputmode="numeric" />
-        </div>
-        <div class="form-group">
-          <label>تحديد الموقع الدقيق (يمكنك سحب الدبوس على الخريطة)</label>
-          <div id="emPickerMap" class="picker-map"></div>
-          <small id="emCoordsText" class="muted"></small>
-        </div>
-        <button type="submit" id="btnSubmitEmergency" class="danger-btn full-width">🚨 نشر البلاغ فوراً</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- نافذة الشروط وإخلاء المسؤولية -->
-  <div id="infoModal" class="modal-backdrop hidden">
-    <div class="modal-card">
-      <div class="modal-head">
-        <h3 id="infoModalTitle">معلومات</h3>
-        <button class="close-modal" data-close="infoModal">✕</button>
-      </div>
-      <div id="infoModalBody" class="modal-body"></div>
-    </div>
-  </div>
-
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./js/config.js"></script>
-  <script src="./js/data.js"></script>
-  <script src="./js/storage.js"></script>
-  <script src="./js/emergency.js"></script>
-  <script src="./js/app.js"></script>
-</body>
-</html>
+    <!-- تبويب 5: حسابي (المعلن / الحرف

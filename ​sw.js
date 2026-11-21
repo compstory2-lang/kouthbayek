@@ -1,15 +1,15 @@
-const CACHE_NAME = 'khoudh-bayek-v1';
+const CACHE_NAME = 'khoudh-bayek-v2';
 
 const APP_SHELL_FILES = [
   './',
   './index.html',
   './manifest.json',
-  './css/style.css',
-  './js/config.js',
-  './js/data.js',
-  './js/storage.js',
-  './js/emergency.js',
-  './js/app.js'
+  './style.css',
+  './config.js',
+  './data.js',
+  './storage.js',
+  './emergency.js',
+  './app.js'
 ];
 
 self.addEventListener('install', (event) => {
