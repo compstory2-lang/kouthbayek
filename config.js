@@ -6,8 +6,7 @@ window.APP_CONFIG = {
   emergencyHours: 6,
   supabase: {
     url: 'https://tlgfwkbsgaiyylhhmywv.supabase.co',
-    // ضع هنا كامل قيمة Publishable key / anon key من مشروع kouthbayek على Supabase
-    anonKey: 'sb_publishable_oW2H_1p5MCX82_b...'
+    anonKey: 'ضع_هنا_كامل_مفتاح_Publishable_key_من_Supabase'
   },
   defaultLocation: {
     governorate: 'قابس',
