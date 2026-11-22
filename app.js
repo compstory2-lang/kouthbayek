@@ -654,7 +654,7 @@
           <div class="flex flex-wrap items-center gap-1.5 pt-1 border-t border-rose-100">
             ${ph ? `<a href="tel:+216${ph}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-rose-600 py-2 px-2 text-xs font-extrabold text-white"><span>📞</span><span>اتصال</span></a>` : ''}
             <button type="button" data-focus-map="emergency:${D.escHtml(e.id)}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl border border-rose-200 bg-rose-50 py-2 px-2 text-xs font-extrabold text-rose-800"><span>🗺️</span><span>الموقع</span></button>
-            <button type="button" data-share-emerg="${D.escHtml(e.id)}" class="inline-flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 py-2 px-2.5 text-xs font-extrabold text-slate-700"><span>📤</span><span>مشاركة</span></button>
+            <button type="button" data-share-emerg="${D.escHtml(e.id)}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl border border-sky-200 bg-sky-50 hover:bg-sky-100 py-2 px-2 text-xs font-extrabold text-sky-900"><span>📤</span><span>مشاركة</span></button>
             ${canClaim ? `<button type="button" data-claim-emerg="${D.escHtml(e.id)}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-[#0D6857] py-2 px-2 text-xs font-extrabold text-white"><span>✅</span><span>استلام</span></button>` : ''}
           </div>
         </article>
