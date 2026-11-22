@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0D6857" />
-  <title>خوذ بايك — دليل الحرفيين • سوق الحومة • طوارئ 24/24</title>
+  <title>خوذ بايك — دليل الحرفيين • سوق الحومة • صيانة عاجلة</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="./styles.css" />
@@ -19,7 +19,7 @@
           <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 border border-white/25 text-2xl shadow-sm">🧺</div>
           <div class="min-w-0">
             <h1 class="text-lg sm:text-xl font-black tracking-tight text-white leading-tight">خوذ بايك</h1>
-            <span class="mt-0.5 inline-block rounded-full bg-white/15 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-50">إطلاق مجاني 60 يوماً • 24 ولاية</span>
+            <span class="mt-0.5 inline-block rounded-full bg-white/15 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-50">مجاني الآن • 24 ولاية</span>
           </div>
         </div>
         <div class="flex items-center gap-1.5 shrink-0">
@@ -160,28 +160,28 @@
       <div id="craftList" class="space-y-3"></div>
     </section>
 
-    <!-- ==================== TAB 3: EMERGENCIES (طوارئ 24/24) ==================== -->
+    <!-- ==================== TAB 3: EMERGENCIES (صيانة عاجلة) ==================== -->
     <section id="tab-emergency" class="tab-panel hidden space-y-3.5">
       <div class="rounded-3xl bg-gradient-to-l from-[#B91C1C] to-[#DC2626] p-4 text-white shadow-md space-y-2.5">
         <div class="flex items-center justify-between gap-2">
-          <h2 id="emergBannerTitle" class="text-base sm:text-lg font-black">🚨 طوارئ المواطنين 24/24 — قابس</h2>
+          <h2 id="emergBannerTitle" class="text-base sm:text-lg font-black">⚡ صيانة عاجلة — قابس</h2>
           <span class="shrink-0 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-black"><span id="openEmergencyCounter">0</span> مفتوح</span>
         </div>
         <p class="text-xs font-semibold text-rose-100 leading-relaxed">
-          عندك عطل مستعجل في الدار أو الكرهبة؟ حط بلاغك مع موقعك الدقيق (وصورة اختيارية)، وأي حرفي قريب يستلمه ويتوجّه إليك عبر Google Maps. إذا لم تتفقا على السعر يمكنك إعادة فتح البلاغ لحرفي آخر بضغطة واحدة.
+          عندك عطل مستعجل في الدار أو الكرهبة؟ حط طلب الصيانة العاجلة مع موقعك الدقيق (وصورة اختيارية)، وأي حرفي قريب يستلمه ويتوجّه إليك عبر Google Maps. إذا لم تتفقا على السعر يمكنك إعادة فتح البلاغ لحرفي آخر بضغطة واحدة.
         </p>
-        <button id="openEmergencyModalBtn" type="button" class="w-full rounded-2xl bg-white hover:bg-rose-50 active:scale-[0.99] py-3 text-sm font-black text-[#B91C1C] shadow-sm transition">+ أبلغ عن عطل طارئ الآن</button>
+        <button id="openEmergencyModalBtn" type="button" class="w-full rounded-2xl bg-white hover:bg-rose-50 active:scale-[0.99] py-3 text-sm font-black text-[#B91C1C] shadow-sm transition">+ أرسل طلب صيانة عاجلة الآن</button>
       </div>
 
       <!-- Owner's Active Emergencies (Confirm Completion OR Reopen if price disagreed) -->
       <div id="myOwnedEmergBox" class="hidden rounded-2xl border-2 border-amber-300 bg-amber-50/70 p-3.5 shadow-sm space-y-2">
-        <h3 class="text-xs font-black text-amber-950">📋 بلاغاتي الطارئة النشطة</h3>
+        <h3 class="text-xs font-black text-amber-950">📋 طلبات الصيانة العاجلة النشطة</h3>
         <div id="myOwnedEmergList" class="space-y-2"></div>
       </div>
 
       <!-- Claimed Emergencies (Private to Claimer — CareGuard Style) -->
       <div id="myClaimedBox" class="hidden rounded-2xl border border-emerald-200 bg-white p-3.5 shadow-sm space-y-2">
-        <h3 class="text-xs font-black text-emerald-900">📌 البلاغات التي استلمتها (مخفية الآن عن العموم)</h3>
+        <h3 class="text-xs font-black text-emerald-900">📌 طلبات الصيانة التي استلمتها (مخفية الآن عن العموم)</h3>
         <div id="myClaimedList" class="space-y-2"></div>
       </div>
 
@@ -197,7 +197,7 @@
           <div class="flex flex-wrap items-center gap-1.5 text-[11px] font-extrabold">
             <button type="button" data-map-layer="market" class="inline-flex items-center gap-1 rounded-full border border-[#0D6857] bg-[#0D6857] px-2.5 py-1 text-white transition"><span>🟢</span><span>العروض</span></button>
             <button type="button" data-map-layer="crafts" class="inline-flex items-center gap-1 rounded-full border border-blue-700 bg-blue-700 px-2.5 py-1 text-white transition"><span>🔵</span><span>الحرفيون</span></button>
-            <button type="button" data-map-layer="emergency" class="inline-flex items-center gap-1 rounded-full border border-rose-600 bg-rose-600 px-2.5 py-1 text-white transition"><span>🔴</span><span>الطوارئ</span></button>
+            <button type="button" data-map-layer="emergency" class="inline-flex items-center gap-1 rounded-full border border-rose-600 bg-rose-600 px-2.5 py-1 text-white transition"><span>🟠</span><span>صيانة عاجلة</span></button>
           </div>
         </div>
       </div>
@@ -214,7 +214,7 @@
       <div class="space-y-1 px-1">
         <h2 class="text-lg font-black text-[#132A23]">👤 فضاء الحرفيين وأصحاب النصب والمحلات</h2>
         <p class="text-xs font-semibold text-slate-600 leading-relaxed">
-          التصفح مفتوح للجميع مجاناً • الدخول بحساب <strong>Google</strong> وتأكيد <strong>رقم الهاتف التونسي</strong> مخصّص للنشر واستلام الطوارئ (<strong>60 يوماً مجاناً</strong>).
+          التصفح مفتوح للجميع مجاناً • الدخول بحساب <strong>Google</strong> وتأكيد <strong>رقم الهاتف التونسي</strong> مخصّص للنشر واستلام طلبات الصيانة العاجلة (<strong>مجاناً بالكامل</strong>).
         </p>
       </div>
 
@@ -254,7 +254,7 @@
             <input id="accPhone" type="tel" inputmode="tel" maxlength="16" required placeholder="55192340 أو +216 55192340" class="w-full rounded-xl border-2 border-[#0D6857] bg-[#F8FAF9] px-3 py-2.5 text-sm font-black outline-none" dir="ltr" />
           </div>
           <div id="accPrivacySlot"></div>
-          <button type="submit" class="w-full rounded-2xl bg-[#0D6857] hover:bg-[#094D40] py-3 text-sm font-black text-white shadow-sm transition">تفعيل الحساب وتجربة 60 يوماً المجانية ←</button>
+          <button type="submit" class="w-full rounded-2xl bg-[#0D6857] hover:bg-[#094D40] py-3 text-sm font-black text-white shadow-sm transition">تفعيل الحساب مجاناً ←</button>
         </form>
       </div>
 
@@ -271,16 +271,6 @@
               </div>
             </div>
             <button id="logoutBtn" type="button" class="shrink-0 rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-extrabold text-rose-700 hover:bg-rose-100 transition">خروج</button>
-          </div>
-          <div class="rounded-2xl border border-amber-200 bg-amber-50/80 p-3">
-            <div class="flex items-center justify-between text-xs font-extrabold text-amber-950">
-              <span>🎉 فترة التجربة المجانية (60 يوماً)</span>
-              <span id="trialDaysLeft">متبقي 60 يوماً</span>
-            </div>
-            <div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-amber-200/80">
-              <div id="trialBar" class="h-full rounded-full bg-[#0D6857] transition-all" style="width: 100%;"></div>
-            </div>
-            <p id="trialEndTxt" class="mt-1.5 text-[11px] font-bold text-amber-900">تنتهي التجربة المجانية في: —</p>
           </div>
           <div class="grid grid-cols-2 gap-2">
             <button id="dashAddOfferBtn" type="button" class="rounded-xl bg-[#0D6857] py-2.5 text-xs font-extrabold text-white hover:bg-[#094D40] transition">+ نشر عرض في السوق</button>
@@ -309,8 +299,8 @@
         <span class="text-[11px] font-extrabold">خوذ بايك</span>
       </button>
       <button type="button" data-tab="emergency" class="kb-nav-btn relative flex flex-col items-center gap-0.5 text-slate-500">
-        <span class="text-xl leading-none">🚨</span>
-        <span class="text-[10px] font-extrabold leading-tight">طوارئ 24/24</span>
+        <span class="text-xl leading-none">⚡</span>
+        <span class="text-[10px] font-extrabold leading-tight">صيانة عاجلة</span>
         <span id="navEmergBadge" class="absolute -top-0.5 left-1/2 translate-x-2 rounded-full bg-rose-600 px-1.5 text-[9px] font-black text-white">0</span>
       </button>
       <button type="button" data-tab="crafts" class="kb-nav-btn flex flex-col items-center gap-0.5 text-slate-500">
@@ -332,7 +322,7 @@
   <div id="emergencyModal" class="hidden fixed inset-0 z-50 kb-modal-backdrop flex items-end sm:items-center justify-center p-2 sm:p-4">
     <div class="w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl bg-white p-4 shadow-2xl space-y-3">
       <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
-        <h3 class="text-base font-black text-rose-700">🚨 نشر بلاغ طارئ 24/24</h3>
+        <h3 class="text-base font-black text-rose-700">⚡ نشر طلب صيانة عاجلة</h3>
         <button type="button" data-close-modal="emergencyModal" class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">✕</button>
       </div>
       <form id="emergencyForm" class="space-y-3">
@@ -345,13 +335,13 @@
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label for="emType" class="block text-xs font-extrabold text-slate-700 mb-1">نوع الطارئ</label>
+            <label for="emType" class="block text-xs font-extrabold text-slate-700 mb-1">نوع العطب</label>
             <select id="emType" required class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-rose-500">
-              <option value="سبّاك طوارئ">🔧 سبّاك طوارئ / تسرب ماء</option>
-              <option value="كهربائي طوارئ">⚡ كهربائي طوارئ</option>
+              <option value="سبّاك طوارئ">🔧 سبّاك عاجل / تسرب ماء</option>
+              <option value="كهربائي طوارئ">⚡ كهربائي عاجل</option>
               <option value="تسرب غاز">🔥 تسرب غاز</option>
               <option value="عطل سيارة">🚗 عطل سيارة على الطريق</option>
-              <option value="مساعدة عاجلة">🆘 طلب مساعدة عاجلة</option>
+              <option value="مساعدة عاجلة">🛠️ تدخّل صيانة عاجل</option>
             </select>
           </div>
           <div>
@@ -361,7 +351,7 @@
         </div>
         <div>
           <label for="emDesc" class="block text-xs font-extrabold text-slate-700 mb-1">وصف الحالة والمكان</label>
-          <textarea id="emDesc" rows="2" required placeholder="صف الطارئ ومكانه بدقة..." class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-rose-500"></textarea>
+          <textarea id="emDesc" rows="2" required placeholder="صف العطب ومكانه بدقة..." class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-rose-500"></textarea>
         </div>
         <div>
           <label for="emPhone" class="block text-xs font-extrabold text-slate-700 mb-1">رقم الهاتف التونسي (إجباري للتواصل) *</label>
@@ -380,7 +370,7 @@
           <p id="emCoordsTxt" class="text-[10px] font-bold text-slate-400" dir="ltr">33.8815, 10.0982</p>
         </div>
         <div id="emPrivacySlot"></div>
-        <button id="emSubmitBtn" type="submit" class="w-full rounded-xl bg-rose-600 hover:bg-rose-700 py-2.5 text-sm font-black text-white">نشر البلاغ الطارئ فوراً</button>
+        <button id="emSubmitBtn" type="submit" class="w-full rounded-xl bg-rose-600 hover:bg-rose-700 py-2.5 text-sm font-black text-white">نشر طلب الصيانة العاجلة فوراً</button>
       </form>
     </div>
   </div>
@@ -514,7 +504,7 @@
   <div id="craftModal" class="hidden fixed inset-0 z-50 kb-modal-backdrop flex items-end sm:items-center justify-center p-2 sm:p-4">
     <div class="w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl bg-white p-4 shadow-2xl space-y-3">
       <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
-        <h3 class="text-base font-black text-[#0D6857]">🛠️ تسجيل حرفي أو ورشة</h3>
+        <h3 id="craftModalTitle" class="text-base font-black text-[#0D6857]">🛠️ تسجيل حرفي أو ورشة</h3>
         <button type="button" data-close-modal="craftModal" class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">✕</button>
       </div>
       <form id="craftForm" class="space-y-3">
@@ -599,7 +589,7 @@
         <p><strong>2. شرعية المعروضات وإخلاء المسؤولية:</strong> يتحمل الناشر وحده كامل المسؤولية المدنية والجزائية عن معروضاته، ولا تتحمل المنصة أي مسؤولية إذا تبيّن أن السلعة <strong>مسروقة أو مقلّدة أو مجهولة المصدر أو مخالفة للقانون التونسي</strong>.</p>
         <p><strong>3. الرقابة الذاتية والتبليغ:</strong> يُمنع نشر الخمور والممنوعات والألفاظ السوقية أو نشر أرقام هواتف الغير دون إذن. تحتفظ الإدارة بحق الحذف الفوري، كما يُخفى تلقائياً أي إعلان يتلقى 3 بلاغات.</p>
         <p><strong>4. صلاحية الإعلانات:</strong> تُحذف كل إعلانات البيع والشراء تلقائياً بعد <strong>24 ساعة</strong> (أو المدة الأقصر المختارة)، ويمكن إغلاقها فوراً بزر «تم البيع».</p>
-        <p><strong>5. طوارئ 24/24:</strong> خدمة للصيانة المستعجلة فقط ولا تغني عن أرقام النجدة الرسمية: الحماية المدنية (<strong>198</strong>)، الشرطة (<strong>197</strong>)، الحرس الوطني (<strong>193</strong>)، والإسعاف (<strong>190</strong>).</p>
+        <p><strong>5. الصيانة العاجلة:</strong> خدمة للصيانة المستعجلة فقط ولا تغني عن أرقام النجدة الرسمية: الحماية المدنية (<strong>198</strong>)، الشرطة (<strong>197</strong>)، الحرس الوطني (<strong>193</strong>)، والإسعاف (<strong>190</strong>).</p>
         <div class="pt-1 flex flex-col gap-2">
           <a href="./privacy.html" class="font-black text-[#0D6857] underline">🔒 قراءة سياسة حماية المعطيات الشخصية الكاملة (القانون عدد 63 لسنة 2004)</a>
           <button type="button" data-open-contact="طلب حذف معطيات / رقم هاتف" class="w-full rounded-xl border border-emerald-300 bg-emerald-50 py-2 text-xs font-black text-[#0D6857] hover:bg-emerald-100 transition">✉️ مراسلة الإدارة مباشرة (طلب حذف أو تبليغ)</button>
