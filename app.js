@@ -413,52 +413,60 @@
              <div class="text-4xl">${cat.icon}</div>
              <div class="mt-1.5 text-xs font-extrabold text-[#0D6857]/80">${D.escHtml(cat.label)} • ${D.escHtml(o.gov)}</div>
            </div>`;
+      const mapsDirUrl = getGoogleMapsDirUrl(o);
       return `
-        <article id="offer-card-${D.escHtml(o.id)}" class="rounded-3xl ${state.sharedOfferId === o.id ? 'border-2 border-[#0D6857] ring-4 ring-emerald-200/70 shadow-lg' : cardBorder} bg-white p-4 space-y-3">
-          <div class="flex flex-wrap items-center justify-between gap-1.5">
-            <div class="flex flex-wrap items-center gap-1.5">
+        <article id="offer-card-${D.escHtml(o.id)}" class="rounded-3xl ${state.sharedOfferId === o.id ? 'border-2 border-[#0D6857] ring-4 ring-emerald-200/70 shadow-lg' : cardBorder} bg-white p-4 space-y-3 transition">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex flex-wrap items-center gap-1.5 min-w-0">
               ${topBadge}
               ${hasDiscount ? '<span class="inline-flex items-center gap-0.5 rounded-full bg-rose-600 px-2.5 py-1 text-[10px] font-black text-white shadow-sm">تخفيض الآن 🔥</span>' : ''}
               ${isBroadcasting ? '<span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-1 text-[10px] font-black text-emerald-900">🟢 هنا الآن</span>' : ''}
             </div>
-            ${dist ? `<span class="shrink-0 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-black text-[#0D6857]">${D.escHtml(dist)}</span>` : ''}
+            ${dist ? `<span class="shrink-0 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-black text-[#0D6857]">📍 ${D.escHtml(dist)}</span>` : ''}
           </div>
-          <h3 class="text-base sm:text-lg font-black text-[#132A23] leading-snug">${D.escHtml(o.title)}</h3>
-          <div class="flex flex-wrap items-center gap-1.5 text-xs font-bold text-slate-600">
-            <span>${D.escHtml(o.seller)}</span>
-            <span class="inline-flex items-center gap-0.5 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-800">✓ حساب Google</span>
-            <span>• 📍 ${D.escHtml(o.gov)}</span>
-            <span class="text-amber-800">• ⏱️ ${D.escHtml(D.formatRemaining(o.expiresAt))}</span>
+
+          <div class="space-y-1">
+            <h3 class="text-base sm:text-lg font-black text-[#132A23] leading-snug">${D.escHtml(o.title)}</h3>
+            <div class="flex flex-wrap items-center gap-1.5 text-xs font-bold text-slate-600">
+              <span class="text-[#132A23]">${D.escHtml(o.seller)}</span>
+              <span class="inline-flex items-center gap-0.5 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-800">✓ Google</span>
+              <span>• ${D.escHtml(o.gov)}</span>
+              <span class="text-amber-800">• ⏱️ ${D.escHtml(D.formatRemaining(o.expiresAt))}</span>
+            </div>
           </div>
+
           ${imgBlock}
-          <div class="rounded-2xl border-r-4 ${hasDiscount ? 'border-rose-500 bg-rose-50/50' : 'border-amber-500 bg-[#FFF9EC]'} px-3.5 py-2.5 space-y-1">
+
+          <div class="rounded-2xl border-r-4 ${hasDiscount ? 'border-rose-500 bg-rose-50/50' : 'border-[#0D6857] bg-[#F7FAF9]'} px-3.5 py-2.5 space-y-1.5">
             <div class="flex items-center justify-between gap-2">
-              <span class="text-xs font-extrabold text-amber-950">💰 السعر:</span>
+              <span class="text-xs font-extrabold text-slate-600">💰 السعر المطلوب</span>
               <div class="flex items-center gap-2">
                 ${hasDiscount ? `<span class="text-xs font-bold text-slate-400 line-through">${D.escHtml(o.prevPrice)} د.ت</span>` : ''}
-                <span class="text-base font-black ${hasDiscount ? 'text-rose-700' : 'text-[#0D6857]'}">${D.escHtml(o.price)} د.ت</span>
+                <span class="text-base sm:text-lg font-black ${hasDiscount ? 'text-rose-700' : 'text-[#0D6857]'}">${D.escHtml(o.price)} د.ت</span>
               </div>
             </div>
-            ${o.desc ? `<p class="text-xs font-bold text-slate-700 leading-relaxed">• ${D.escHtml(o.desc)}</p>` : ''}
+            ${o.desc ? `<p class="text-xs font-semibold text-slate-700 leading-relaxed pt-1 border-t border-slate-200/70">${D.escHtml(o.desc)}</p>` : ''}
           </div>
-          <div class="grid grid-cols-2 gap-1.5 pt-1">
-            ${ph ? `<a href="tel:+216${ph}" class="flex items-center justify-center gap-1 rounded-xl bg-[#0D6857] py-2.5 text-xs font-extrabold text-white hover:bg-[#094D40] transition"><span>📞</span><span>اتصال</span></a>` : '<span></span>'}
-            ${ph ? `<a href="https://wa.me/216${ph}?text=${encodeURIComponent('مرحباً، بخصوص عرضك على خوذ بايك: ' + o.title)}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl bg-emerald-600 py-2.5 text-xs font-extrabold text-white hover:bg-emerald-700 transition"><span>💬</span><span>واتساب</span></a>` : '<span></span>'}
-            <button type="button" data-focus-map="market:${D.escHtml(o.id)}" class="flex items-center justify-center gap-1 rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] py-2 text-xs font-extrabold text-[#132A23] hover:bg-emerald-50 transition"><span>🗺️</span><span>الخريطة</span></button>
-            ${getGoogleMapsDirUrl(o) ? `<a href="${D.escHtml(getGoogleMapsDirUrl(o))}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl bg-blue-700 hover:bg-blue-800 py-2 text-xs font-extrabold text-white transition"><span>🧭</span><span>قوقل ماب</span></a>` : '<span></span>'}
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-0.5">
+            ${ph ? `<a href="tel:+216${ph}" class="flex items-center justify-center gap-1 rounded-xl bg-[#0D6857] hover:bg-[#094D40] py-2.5 px-2 text-xs font-extrabold text-white transition"><span>📞</span><span>اتصال</span></a>` : '<span></span>'}
+            ${ph ? `<a href="https://wa.me/216${ph}?text=${encodeURIComponent('مرحباً، بخصوص عرضك على خوذ بايك: ' + o.title)}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 py-2.5 px-2 text-xs font-extrabold text-white transition"><span>💬</span><span>واتساب</span></a>` : '<span></span>'}
+            <button type="button" data-focus-map="market:${D.escHtml(o.id)}" class="flex items-center justify-center gap-1 rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] hover:bg-emerald-50 py-2.5 px-2 text-xs font-extrabold text-[#132A23] transition"><span>🗺️</span><span>الخريطة</span></button>
+            ${mapsDirUrl ? `<a href="${D.escHtml(mapsDirUrl)}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl bg-blue-700 hover:bg-blue-800 py-2.5 px-2 text-xs font-extrabold text-white transition"><span>🧭</span><span>قوقل ماب</span></a>` : '<span></span>'}
           </div>
-          <div class="flex flex-wrap items-center justify-between gap-1.5 pt-1.5 border-t border-slate-100 text-[11px] font-extrabold">
+
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-[11px] font-extrabold">
             <div class="flex items-center gap-1.5">
-              <button type="button" data-share-offer="${D.escHtml(o.id)}" class="rounded-lg bg-slate-100 hover:bg-slate-200 px-2.5 py-1 text-slate-700 transition">📤 مشاركة</button>
-              <button type="button" data-report-offer="${D.escHtml(o.id)}" class="rounded-lg bg-rose-50 hover:bg-rose-100 px-2.5 py-1 text-rose-700 transition">🚩 إبلاغ</button>
+              <button type="button" data-share-offer="${D.escHtml(o.id)}" class="rounded-xl bg-slate-100 hover:bg-slate-200 px-3 py-1.5 text-slate-700 transition">📤 مشاركة</button>
+              <button type="button" data-report-offer="${D.escHtml(o.id)}" class="rounded-xl bg-rose-50 hover:bg-rose-100 px-3 py-1.5 text-rose-700 transition">🚩 إبلاغ</button>
             </div>
             ${owner ? `
               <div class="flex flex-wrap items-center gap-1">
-                <button type="button" data-live-loc-offer="${D.escHtml(o.id)}" class="rounded-lg ${state.liveOfferId === o.id ? 'bg-rose-600 text-white' : 'bg-emerald-100 text-emerald-900 border border-emerald-300'} px-2 py-1 transition">
+                <button type="button" data-live-loc-offer="${D.escHtml(o.id)}" class="rounded-xl ${state.liveOfferId === o.id ? 'bg-rose-600 text-white' : 'bg-emerald-100 text-emerald-900 border border-emerald-300'} px-2.5 py-1.5 transition">
                   ${state.liveOfferId === o.id ? '⏹️ إيقاف البث' : '📍 أنا هنا الآن'}
                 </button>
-                <button type="button" data-edit-price-offer="${D.escHtml(o.id)}" class="rounded-lg bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-1 text-blue-900 transition">🏷️ السعر</button>
-                <button type="button" data-mark-sold="${D.escHtml(o.id)}" class="rounded-lg bg-amber-100 hover:bg-amber-200 border border-amber-300 px-2 py-1 text-amber-950 transition">✅ تم البيع</button>
+                <button type="button" data-edit-price-offer="${D.escHtml(o.id)}" class="rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1.5 text-blue-900 transition">🏷️ السعر</button>
+                <button type="button" data-mark-sold="${D.escHtml(o.id)}" class="rounded-xl bg-amber-100 hover:bg-amber-200 border border-amber-300 px-2.5 py-1.5 text-amber-950 transition">✅ تم البيع</button>
               </div>
             ` : ''}
           </div>
@@ -534,19 +542,33 @@
       const sp = D.getCraftCatInfo(c.spec);
       const ph = D.cleanPhone(c.phone);
       const dist = getDistBadge(c);
+      const mapsDirUrl = getGoogleMapsDirUrl(c);
       return `
-        <article class="rounded-3xl border border-[#E4EAE8] bg-white p-4 shadow-sm space-y-2.5">
+        <article class="rounded-3xl border border-[#E4EAE8] bg-white p-4 shadow-sm space-y-3 transition">
           <div class="flex items-center justify-between gap-2">
-            <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-black text-[#0D6857]">${sp.icon} ${D.escHtml(sp.label)}</span>
-            ${dist ? `<span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-extrabold text-slate-700">📍 ${D.escHtml(dist)}</span>` : ''}
+            <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-[11px] font-black text-[#0D6857]">${sp.icon} ${D.escHtml(sp.label)}</span>
+            ${dist ? `<span class="shrink-0 rounded-full bg-slate-100 border border-slate-200 px-2.5 py-1 text-[11px] font-extrabold text-slate-700">📍 ${D.escHtml(dist)}</span>` : ''}
           </div>
-          <h3 class="text-sm sm:text-base font-black text-[#132A23]">${D.escHtml(c.name)}</h3>
-          <p class="text-xs font-bold text-slate-500">⭐ ${Number(c.rating || 5).toFixed(1)} (${Number(c.reviews || 1)}) • 📍 ${D.escHtml(c.gov)} — ${D.escHtml(c.area)}</p>
-          <p class="text-xs font-semibold text-slate-700">${D.escHtml(c.note)}</p>
-          <div class="grid grid-cols-3 gap-1.5 pt-1 border-t border-slate-100">
-            ${ph ? `<a href="tel:+216${ph}" class="flex items-center justify-center gap-1 rounded-xl bg-[#0D6857] py-2 text-xs font-extrabold text-white"><span>📞</span><span>اتصال</span></a>` : '<span></span>'}
-            ${ph ? `<a href="https://wa.me/216${ph}?text=${encodeURIComponent('مرحباً، وجدت رقمك على خوذ بايك وأحتاج خدمة: ' + sp.label)}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl bg-emerald-600 py-2 text-xs font-extrabold text-white"><span>💬</span><span>واتساب</span></a>` : '<span></span>'}
-            <button type="button" data-focus-map="crafts:${D.escHtml(c.id)}" class="flex items-center justify-center gap-1 rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] py-2 text-xs font-extrabold text-[#132A23]"><span>🗺️</span><span>الموقع</span></button>
+
+          <div class="space-y-1">
+            <h3 class="text-base font-black text-[#132A23] leading-snug">${D.escHtml(c.name)}</h3>
+            <div class="flex flex-wrap items-center gap-1.5 text-xs font-bold text-slate-500">
+              <span class="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-black text-amber-900">⭐ ${Number(c.rating || 5).toFixed(1)} (${Number(c.reviews || 1)})</span>
+              <span>• 📍 ${D.escHtml(c.gov)} — ${D.escHtml(c.area)}</span>
+            </div>
+          </div>
+
+          ${c.note ? `
+            <div class="rounded-2xl border-r-4 border-[#0D6857] bg-[#F7FAF9] px-3.5 py-2.5">
+              <p class="text-xs font-semibold text-slate-700 leading-relaxed">${D.escHtml(c.note)}</p>
+            </div>
+          ` : ''}
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1 border-t border-slate-100">
+            ${ph ? `<a href="tel:+216${ph}" class="flex items-center justify-center gap-1 rounded-xl bg-[#0D6857] hover:bg-[#094D40] py-2.5 px-2 text-xs font-extrabold text-white transition"><span>📞</span><span>اتصال</span></a>` : '<span></span>'}
+            ${ph ? `<a href="https://wa.me/216${ph}?text=${encodeURIComponent('مرحباً، وجدت رقمك على خوذ بايك وأحتاج خدمة: ' + sp.label)}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 py-2.5 px-2 text-xs font-extrabold text-white transition"><span>💬</span><span>واتساب</span></a>` : '<span></span>'}
+            <button type="button" data-focus-map="crafts:${D.escHtml(c.id)}" class="flex items-center justify-center gap-1 rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] hover:bg-emerald-50 py-2.5 px-2 text-xs font-extrabold text-[#132A23] transition"><span>🗺️</span><span>الخريطة</span></button>
+            ${mapsDirUrl ? `<a href="${D.escHtml(mapsDirUrl)}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl bg-blue-700 hover:bg-blue-800 py-2.5 px-2 text-xs font-extrabold text-white transition"><span>🧭</span><span>قوقل ماب</span></a>` : '<span></span>'}
           </div>
         </article>
       `;
@@ -658,21 +680,26 @@
       const isMine = myUid && e.userId === myUid;
       const canClaim = !isMine && canClaimEmergency(e.type);
       return `
-        <article class="rounded-3xl border border-rose-200 bg-white p-4 shadow-sm space-y-2.5">
-          <div class="flex items-start justify-between gap-2">
-            <div class="flex flex-wrap items-center gap-1.5">
-              <span class="rounded-full bg-rose-100 px-2.5 py-0.5 text-[11px] font-black text-rose-800">⚡ ${D.escHtml(e.type)}</span>
-              <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">🕒 ${D.escHtml(D.formatAgo(e.createdAt))}</span>
+        <article class="rounded-3xl border border-rose-200/90 bg-white p-4 shadow-sm space-y-3 transition">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex flex-wrap items-center gap-1.5 min-w-0">
+              <span class="rounded-full bg-rose-100 border border-rose-200 px-3 py-1 text-xs font-black text-rose-800">⚡ ${D.escHtml(e.type)}</span>
+              <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-600">🕒 ${D.escHtml(D.formatAgo(e.createdAt))}</span>
             </div>
-            <span class="text-[11px] font-extrabold text-rose-700">📍 ${D.escHtml(e.gov)}${dist ? ' • ' + D.escHtml(dist) : ''}</span>
+            <span class="shrink-0 rounded-full bg-rose-50 border border-rose-200 px-2.5 py-1 text-[11px] font-black text-rose-800">📍 ${D.escHtml(e.gov)}${dist ? ' • ' + D.escHtml(dist) : ''}</span>
           </div>
-          ${e.imageUrl ? `<img src="${D.escHtml(e.imageUrl)}" alt="صورة العطب" loading="lazy" class="h-44 w-full rounded-2xl object-cover border border-rose-100" />` : ''}
-          <p class="text-xs sm:text-sm font-bold text-slate-800 leading-relaxed">${D.escHtml(e.desc)}</p>
-          <div class="flex flex-wrap items-center gap-1.5 pt-1 border-t border-rose-100">
-            ${ph ? `<a href="tel:+216${ph}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-rose-600 py-2 px-2 text-xs font-extrabold text-white"><span>📞</span><span>اتصال</span></a>` : ''}
-            <button type="button" data-focus-map="emergency:${D.escHtml(e.id)}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl border border-rose-200 bg-rose-50 py-2 px-2 text-xs font-extrabold text-rose-800"><span>🗺️</span><span>الموقع</span></button>
-            <button type="button" data-share-emerg="${D.escHtml(e.id)}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl border border-sky-200 bg-sky-50 hover:bg-sky-100 py-2 px-2 text-xs font-extrabold text-sky-900"><span>📤</span><span>مشاركة</span></button>
-            ${canClaim ? `<button type="button" data-claim-emerg="${D.escHtml(e.id)}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-[#0D6857] py-2 px-2 text-xs font-extrabold text-white"><span>✅</span><span>استلام</span></button>` : ''}
+
+          ${e.imageUrl ? `<div class="overflow-hidden rounded-2xl border border-rose-100 bg-slate-100"><img src="${D.escHtml(e.imageUrl)}" alt="صورة العطب" loading="lazy" class="h-44 w-full object-cover" /></div>` : ''}
+
+          <div class="rounded-2xl bg-rose-50/45 border-r-4 border-rose-500 px-3.5 py-2.5">
+            <p class="text-xs sm:text-sm font-bold text-slate-800 leading-relaxed">${D.escHtml(e.desc)}</p>
+          </div>
+
+          <div class="grid ${canClaim ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'} gap-1.5 pt-1 border-t border-rose-100">
+            ${ph ? `<a href="tel:+216${ph}" class="flex items-center justify-center gap-1 rounded-xl bg-rose-600 hover:bg-rose-700 py-2.5 px-2 text-xs font-extrabold text-white transition"><span>📞</span><span>اتصال</span></a>` : '<span></span>'}
+            <button type="button" data-focus-map="emergency:${D.escHtml(e.id)}" class="flex items-center justify-center gap-1 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 py-2.5 px-2 text-xs font-extrabold text-rose-800 transition"><span>🗺️</span><span>الموقع</span></button>
+            <button type="button" data-share-emerg="${D.escHtml(e.id)}" class="flex items-center justify-center gap-1 rounded-xl border border-sky-200 bg-sky-50 hover:bg-sky-100 py-2.5 px-2 text-xs font-extrabold text-sky-900 transition"><span>📤</span><span>مشاركة</span></button>
+            ${canClaim ? `<button type="button" data-claim-emerg="${D.escHtml(e.id)}" class="flex items-center justify-center gap-1 rounded-xl bg-[#0D6857] hover:bg-[#094D40] py-2.5 px-2 text-xs font-extrabold text-white transition"><span>✅</span><span>استلام</span></button>` : ''}
           </div>
         </article>
       `;
@@ -700,6 +727,9 @@
 
       const myOffers = state.offers.filter((o) => isOfferOwner(o) && o.status === 'active');
       const myCrafts = state.crafts.filter((c) => c.userId && c.userId === acc.userId);
+      if ($('dashAddCraftBtn')) {
+        $('dashAddCraftBtn').classList.toggle('hidden', myCrafts.length > 0);
+      }
       const items = [
         ...myOffers.map((o) => `
           <div class="rounded-xl bg-[#F8FAF9] border border-[#E4EAE8] px-3 py-2 text-[#132A23] space-y-1.5">
@@ -824,12 +854,20 @@
       toggleVehicleFields();
     } else if (id === 'craftModal') {
       if (P) P.clearConsentError('craftPrivacyCheck');
+      const uid = (state.account && state.account.userId) || (state.authUser && state.authUser.id) || '';
+      const existingByUser = !state.editingCraftId && uid ? state.crafts.find((x) => x.userId === uid) : null;
+      if (existingByUser) {
+        $(id).classList.add('hidden');
+        showToast('🔒 لديك اختصاص مسجّل بالفعل على هذا الحساب ولا يمكن إضافة اختصاص آخر أو تغييره.');
+        return;
+      }
       const editing = state.editingCraftId ? state.crafts.find((x) => x.id === state.editingCraftId) : null;
       if (editing) {
         $('craftModalTitle').textContent = '✏️ تعديل بطاقة الحرفي';
         $('crSubmitBtn').textContent = 'حفظ التعديلات';
         $('crName').value = editing.name || '';
         $('crSpec').value = editing.spec || '';
+        $('crSpec').disabled = true;
         $('crGov').value = editing.gov || state.gov;
         $('crPhone').value = editing.phone || '';
         $('crArea').value = editing.area || '';
@@ -838,6 +876,7 @@
         state.editingCraftId = null;
         $('craftModalTitle').textContent = '🛠️ تسجيل حرفي أو ورشة';
         $('crSubmitBtn').textContent = 'حفظ وإظهار في دليل الحرفيين';
+        $('crSpec').disabled = false;
         $('crGov').value = state.gov;
         $('crPhone').value = (state.account && state.account.phone) || '';
         $('crName').value = (state.account && state.account.name) || '';
@@ -1671,14 +1710,21 @@
     submitBtn.disabled = true;
     submitBtn.textContent = '⏳ جاري الحفظ...';
     try {
+      const uid = (state.account && state.account.userId) || (state.authUser && state.authUser.id) || '';
+      const alreadyRegistered = uid ? state.crafts.find((x) => x.userId === uid) : null;
+      if (!state.editingCraftId && alreadyRegistered) {
+        showToast('🔒 هذا الحساب مسجّل بالفعل باختصاص محدد ولا يمكن تسجيل اختصاص ثانٍ.');
+        return;
+      }
       const g = D.getGovObj($('crGov').value);
       if (state.editingCraftId) {
         const existing = state.crafts.find((x) => x.id === state.editingCraftId);
+        const lockedSpec = (existing && existing.spec) ? existing.spec : $('crSpec').value;
         const updatedCr = {
           ...(existing || {}),
           id: state.editingCraftId,
           name,
-          spec: $('crSpec').value,
+          spec: lockedSpec,
           gov: $('crGov').value,
           area,
           phone: ph,
