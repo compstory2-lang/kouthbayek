@@ -67,6 +67,38 @@
     return Boolean(state.account && state.account.verified && D.isValidTnPhone(state.account.phone));
   }
 
+  function getMyCraftSpecs() {
+    if (!isAccountActive() || !state.account || !state.account.userId) return [];
+    return state.crafts
+      .filter((c) => c.userId === state.account.userId)
+      .map((c) => String(c.spec || '').trim())
+      .filter(Boolean);
+  }
+
+  function canClaimEmergency(emergType) {
+    const mySpecs = getMyCraftSpecs();
+    if (!mySpecs.length) return false;
+
+    const specMap = {
+      'سبّاك طوارئ': ['plumbing'],
+      'كهربائي طوارئ': ['electric'],
+      'تسرب غاز': ['plumbing', 'heating'],
+      'عطل سيارة': ['auto', 'auto_elec'],
+      'مساعدة عاجلة': ['plumbing', 'electric', 'ac', 'appliances', 'heating', 'build', 'tiler', 'painter', 'waterproof', 'plaster', 'carpenter', 'alu', 'shutters', 'welder', 'locksmith', 'glass', 'tanks', 'pest', 'handyman', 'worker', 'auto', 'auto_elec']
+    };
+
+    const allowedSpecs = specMap[emergType] || [];
+    return mySpecs.some((sp) => allowedSpecs.includes(sp));
+  }
+
+  function isEmergencyVisibleToUser(em) {
+    const myUid = state.account && state.account.userId;
+    if (myUid && em.userId === myUid) return true;
+    const mySpecs = getMyCraftSpecs();
+    if (!mySpecs.length) return true;
+    return canClaimEmergency(em.type);
+  }
+
   function requireActiveAccount(reasonMsg) {
     if (isAccountActive()) return true;
     showToast(reasonMsg || '⚠️ سجّل دخولك عبر Google وأكمل رقم هاتفك التونسي أولاً.');
@@ -512,6 +544,7 @@
       if (e.status !== 'open') return false;
       if (!matchesGeo(e)) return false;
       if (state.emergCat !== 'all' && e.type !== state.emergCat) return false;
+      if (!isEmergencyVisibleToUser(e)) return false;
       return true;
     }).sort((a, b) => distanceOf(a) - distanceOf(b) || (b.createdAt - a.createdAt));
   }
@@ -608,6 +641,7 @@
       const ph = D.cleanPhone(e.phone);
       const dist = getDistBadge(e);
       const isMine = myUid && e.userId === myUid;
+      const canClaim = !isMine && canClaimEmergency(e.type);
       return `
         <article class="rounded-3xl border border-rose-200 bg-white p-4 shadow-sm space-y-2.5">
           <div class="flex items-start justify-between gap-2">
@@ -622,7 +656,7 @@
           <div class="flex flex-wrap items-center gap-1.5 pt-1 border-t border-rose-100">
             ${ph ? `<a href="tel:+216${ph}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-rose-600 py-2 px-2.5 text-xs font-extrabold text-white"><span>📞</span><span>اتصال</span></a>` : ''}
             <button type="button" data-focus-map="emergency:${D.escHtml(e.id)}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl border border-rose-200 bg-rose-50 py-2 px-2.5 text-xs font-extrabold text-rose-800"><span>🗺️</span><span>الموقع</span></button>
-            ${!isMine ? `<button type="button" data-claim-emerg="${D.escHtml(e.id)}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-[#0D6857] py-2 px-2.5 text-xs font-extrabold text-white"><span>✅</span><span>استلام</span></button>` : ''}
+            ${canClaim ? `<button type="button" data-claim-emerg="${D.escHtml(e.id)}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-[#0D6857] py-2 px-2.5 text-xs font-extrabold text-white"><span>✅</span><span>استلام</span></button>` : ''}
           </div>
         </article>
       `;
@@ -1187,6 +1221,10 @@
     if (claimBtn) {
       if (!requireActiveAccount('⚠️ لاستلام طلب صيانة عاجلة، فعّل حسابك عبر Google ورقم الهاتف أولاً.')) return;
       const id = claimBtn.dataset.claimEmerg;
+      const targetEm = state.emergencies.find((x) => x.id === id);
+      if (!targetEm || !canClaimEmergency(targetEm.type)) {
+        return showToast('⚠️ استلام هذا الطلب متاح فقط للحرفيين المسجّلين في الاختصاص المناسب.');
+      }
       const res = await D.claimEmergencyAtomic(id, state.account && state.account.userId);
       if (res.alreadyClaimed) {
         state.emergencies = state.emergencies.filter((x) => x.id !== id);
