@@ -162,8 +162,37 @@ window.KB_DATA = (() => {
   }
 
   // ==================== GOOGLE OAUTH (PKCE) & CLOUD ACCOUNT ====================
+  const isCapNative = () => Boolean(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+
+  if (isCapNative() && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+    window.Capacitor.Plugins.App.addListener('appUrlOpen', async (ev) => {
+      const u = (ev && ev.url) || '';
+      if (!u.startsWith('tn.kouthbayek.app://callback')) return;
+      try { if (window.Capacitor.Plugins.Browser) await window.Capacitor.Plugins.Browser.close(); } catch (_) {}
+      try {
+        const code = new URL(u).searchParams.get('code');
+        if (!code || !sbClient) return;
+        const { error } = await sbClient.auth.exchangeCodeForSession(code);
+        if (!error) window.location.reload();
+      } catch (_) {}
+    });
+  }
+
   async function signInWithGoogle() {
     if (!sbClient) throw new Error('Supabase غير متصل');
+    if (isCapNative() && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
+      const { data, error } = await sbClient.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: 'tn.kouthbayek.app://callback',
+          skipBrowserRedirect: true,
+          queryParams: { prompt: 'select_account' }
+        }
+      });
+      if (error) throw error;
+      if (data && data.url) await window.Capacitor.Plugins.Browser.open({ url: data.url });
+      return;
+    }
     const redirectTo = window.location.origin + window.location.pathname;
     const { error } = await sbClient.auth.signInWithOAuth({
       provider: 'google',

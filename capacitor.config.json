@@ -1,0 +1,8 @@
+{
+  "appId": "tn.kouthbayek.app",
+  "appName": "خوذ بايك",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}
