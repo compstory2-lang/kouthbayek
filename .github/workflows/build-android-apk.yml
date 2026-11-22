@@ -1,1 +1,60 @@
+name: Build Khouz Bayek Android APK
 
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+    paths:
+      - '*.html'
+      - '*.js'
+      - '*.css'
+      - 'package.json'
+      - 'capacitor.config.json'
+      - '.github/workflows/build-android-apk.yml'
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Capacitor dependencies
+        run: npm install
+
+      - name: Prepare web assets into www/
+        run: npm run prepare:www
+
+      - name: Generate Android project & sync Capacitor
+        run: |
+          rm -rf android
+          npx cap add android
+          npx cap sync android
+
+      - name: Apply Khouz Bayek Icon to Android
+        run: |
+          python3 -c '
+          import shutil
+          from pathlib import Path
+          src = Path("icon-512.png")
+          if src.exists():
+            res = Path("android/app/src/main/res")
+            for mp in res.glob("mipmap-*"):
+              for fn in ["ic_launcher.png", "ic_launcher_round.png", "ic_launcher_foreground.png"]:
+                target = mp / fn
+                if target.exists():
+                  shutil.copyfile(src, target)
+            bg = res / "values" / "ic_launcher_background.xml"
+            if bg.exists():
+              bg.write_text("<?xml version=\"1.0\" encoding=\"utf-8\"?><resources><color name=\"ic_launcher_background\">#0
