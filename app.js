@@ -1096,35 +1096,37 @@
     closeModal('shareModal');
   });
 
-  $('shareMsgBtn').addEventListener('click', async () => {
+  $('shareMsgBtn').addEventListener('click', () => {
     if (!state.shareTarget) return;
     const { url, text } = buildShareText(state.shareTarget, state.shareKind);
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch (_) {}
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(() => {});
+    }
 
     if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Share) {
-      try {
-        await window.Capacitor.Plugins.Share.share({ title: state.shareTarget.title || 'خوذ بايك', text, url });
-        closeModal('shareModal');
-        return;
-      } catch (_) {}
+      window.Capacitor.Plugins.Share.share({ title: state.shareTarget.title || 'خوذ بايك', text, url })
+        .then(() => closeModal('shareModal'))
+        .catch(() => {
+          window.open('https://www.messenger.com/', '_blank', 'noopener');
+          closeModal('shareModal');
+        });
+      return;
     }
 
     if (navigator.share) {
-      try {
-        await navigator.share({ title: state.shareTarget.title || 'خوذ بايك', text, url });
-        closeModal('shareModal');
-        return;
-      } catch (err) {
-        if (err && err.name === 'AbortError') {
-          showToast('📋 النص منسوخ — يمكنك لصقه في ماسنجر في أي وقت.');
-          return;
-        }
-      }
+      navigator.share({ title: state.shareTarget.title || 'خوذ بايك', text, url })
+        .then(() => closeModal('shareModal'))
+        .catch((err) => {
+          if (err && err.name === 'AbortError') return;
+          window.open('https://www.messenger.com/', '_blank', 'noopener');
+          closeModal('shareModal');
+        });
+      return;
     }
 
-    showToast('📋 تم نسخ الإعلان والرابط — افتح ماسنجر والصقه مباشرة في المحادثة.');
+    window.open('https://www.messenger.com/', '_blank', 'noopener');
+    showToast('📋 تم نسخ النص — الصقه في ماسنجر مباشرة.');
     closeModal('shareModal');
   });
 
