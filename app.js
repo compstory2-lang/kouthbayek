@@ -1,4 +1,4 @@
-// خوذ بايك — منطق الواجهة والأحداث والمفضّلة والفلاتر والطوارئ المتقدمة (v1.4-TN)
+// خوذ بايك — منطق الواجهة الكامل (v1.5-TN: أنا هنا الآن، تخفيض السعر، 24س، مشاركة فيسبوك، إعادة فتح الطوارئ، تبديل الحساب)
 (() => {
   'use strict';
 
@@ -43,7 +43,12 @@
     pendingEmPhoto: null,
     offerCoords: null,
     pendingOfferPhoto: null,
-    reportTarget: null
+    reportTarget: null,
+    quickPriceTarget: null,
+    shareTarget: null,
+    liveWatchId: null,
+    liveOfferId: null,
+    lastLivePushAt: 0
   };
 
   let toastTimer = null;
@@ -108,6 +113,62 @@
     }
   }
 
+  function stopLiveLocationBroadcast(silent = false) {
+    if (state.liveWatchId !== null && navigator.geolocation) {
+      navigator.geolocation.clearWatch(state.liveWatchId);
+    }
+    const prevId = state.liveOfferId;
+    state.liveWatchId = null;
+    state.liveOfferId = null;
+    if (prevId && state.account && state.account.userId) {
+      D.updateOfferLiveLocation(prevId, state.account.userId, 0, 0, false).catch(() => {});
+      state.offers = state.offers.map((o) => o.id === prevId ? { ...o, liveLocation: false } : o);
+      D.lsSet(D.STORE_KEYS.offers, state.offers);
+      renderAll();
+      if (!silent) showToast('⏹️ تم إيقاف بث موقعك المباشر.');
+    }
+  }
+
+  function startLiveLocationBroadcast(offerId) {
+    if (!navigator.geolocation) return showToast('⚠️ تحديد الموقع GPS غير متاح على هذا الجهاز.');
+    if (state.liveOfferId && state.liveOfferId !== offerId) {
+      stopLiveLocationBroadcast(true);
+    }
+    showToast('📡 جاري تفعيل «أنا هنا الآن» وتحديث موقعك...');
+    const pushPos = async (lat, lng, isFirst) => {
+      const now = Date.now();
+      if (!isFirst && (now - state.lastLivePushAt) < 25000) return;
+      state.lastLivePushAt = now;
+      const res = await D.updateOfferLiveLocation(offerId, state.account.userId, lat, lng, true);
+      if (!res.ok) {
+        if (isFirst) showToast('⚠️ تعذر تحديث الموقع: ' + (res.error || 'حاول مجدداً'));
+        return;
+      }
+      state.offers = state.offers.map((o) => o.id === offerId ? { ...o, lat, lng, liveLocation: true, liveUpdatedAt: now } : o);
+      D.lsSet(D.STORE_KEYS.offers, state.offers);
+      renderAll();
+      if (isFirst) showToast('🟢 تم تفعيل «أنا هنا الآن» — يتحدّث موقعك تلقائياً حتى تضغط إيقاف.');
+    };
+
+    state.liveOfferId = offerId;
+    state.lastLivePushAt = 0;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => pushPos(pos.coords.latitude, pos.coords.longitude, true),
+      () => {
+        state.liveOfferId = null;
+        showToast('⚠️ تعذر قراءة GPS، تأكد من تفعيل الموقع في الهاتف.');
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+    state.liveWatchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        if (state.liveOfferId === offerId) pushPos(pos.coords.latitude, pos.coords.longitude, false);
+      },
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 15000 }
+    );
+  }
+
   function populateSelects() {
     const govOpts = C.TN_GOVERNORATES.map((g) => `<option value="${D.escHtml(g.ar)}">${D.escHtml(g.ar)}</option>`).join('');
     ['govSelect', 'emGov', 'ofGov', 'crGov'].forEach((id) => {
@@ -122,7 +183,6 @@
       .map((c) => `<option value="${D.escHtml(c.id)}">${c.icon} ${D.escHtml(c.label)}</option>`).join('');
   }
 
-  // ==================== FAVORITES PANEL (المفضّلة) ====================
   function renderFavCatsPanel() {
     $('favCatsCount').textContent = String(state.favCats.length);
     const btn = $('marketFavsBtn');
@@ -145,7 +205,6 @@
     }).join('');
   }
 
-  // ==================== 2-COLUMN CATEGORY TILE GRIDS ====================
   function renderCategoryBars() {
     const geoOffers = state.offers.filter((o) => o.status === 'active' && (!o.expiresAt || o.expiresAt > Date.now()) && matchesGeo(o));
     $('marketCatBar').innerHTML = C.MARKET_CATS.filter((c) => c.id !== 'all').map((c) => {
@@ -203,7 +262,6 @@
     `).join('');
   }
 
-  // ==================== MARKET (SEARCH + FAVORITES + FILTERS + VEHICLES) ====================
   function getFilteredOffers() {
     const q = D.normalizeAr(state.marketSearch);
     const minP = state.minPrice !== '' ? Number(state.minPrice) : null;
@@ -238,7 +296,6 @@
       }
       return true;
     }).sort((a, b) => {
-      // في وضع المفضّلة أو الكل: نعطي أولوية خفيفة للفئات المفضلة إذا كان وضع المفضّلة مفعّلاً
       if (state.showFavsOnly) {
         const fa = state.favCats.includes(a.cat) ? 0 : 1;
         const fb = state.favCats.includes(b.cat) ? 0 : 1;
@@ -250,7 +307,6 @@
     });
   }
 
-  // ملكية الإعلان مبنية على user_id فقط (لا على رقم الهاتف)
   function isOfferOwner(o) {
     if (!isAccountActive()) return false;
     return Boolean(o.userId && state.account.userId && o.userId === state.account.userId);
@@ -296,6 +352,8 @@
       const dist = getDistBadge(o);
       const owner = isOfferOwner(o);
       const isClosest = idx === 0 && state.marketSort === 'nearest';
+      const hasDiscount = Number.isFinite(o.prevPrice) && o.prevPrice > Number(o.price);
+      const isBroadcasting = state.liveOfferId === o.id || Boolean(o.liveLocation);
       const cardBorder = isClosest ? 'border-2 border-amber-400/90 shadow-md' : 'border border-[#E4EAE8] shadow-sm';
       const topBadge = isClosest
         ? `<span class="inline-flex items-center gap-1 rounded-full bg-amber-100/90 border border-amber-200 px-3 py-1 text-[11px] font-black text-amber-900">⭐ الأقرب إليك</span>`
@@ -308,8 +366,12 @@
            </div>`;
       return `
         <article class="rounded-3xl ${cardBorder} bg-white p-4 space-y-3">
-          <div class="flex items-center justify-between gap-2">
-            ${topBadge}
+          <div class="flex flex-wrap items-center justify-between gap-1.5">
+            <div class="flex flex-wrap items-center gap-1.5">
+              ${topBadge}
+              ${hasDiscount ? '<span class="inline-flex items-center gap-0.5 rounded-full bg-rose-600 px-2.5 py-1 text-[10px] font-black text-white shadow-sm">تخفيض الآن 🔥</span>' : ''}
+              ${isBroadcasting ? '<span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-1 text-[10px] font-black text-emerald-900">🟢 هنا الآن</span>' : ''}
+            </div>
             ${dist ? `<span class="shrink-0 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-black text-[#0D6857]">${D.escHtml(dist)}</span>` : ''}
           </div>
           <h3 class="text-base sm:text-lg font-black text-[#132A23] leading-snug">${D.escHtml(o.title)}</h3>
@@ -320,10 +382,13 @@
             <span class="text-amber-800">• ⏱️ ${D.escHtml(D.formatRemaining(o.expiresAt))}</span>
           </div>
           ${imgBlock}
-          <div class="rounded-2xl border-r-4 border-amber-500 bg-[#FFF9EC] px-3.5 py-2.5 space-y-1">
+          <div class="rounded-2xl border-r-4 ${hasDiscount ? 'border-rose-500 bg-rose-50/50' : 'border-amber-500 bg-[#FFF9EC]'} px-3.5 py-2.5 space-y-1">
             <div class="flex items-center justify-between gap-2">
               <span class="text-xs font-extrabold text-amber-950">💰 السعر:</span>
-              <span class="text-base font-black text-[#0D6857]">${D.escHtml(o.price)} د.ت</span>
+              <div class="flex items-center gap-2">
+                ${hasDiscount ? `<span class="text-xs font-bold text-slate-400 line-through">${D.escHtml(o.prevPrice)} د.ت</span>` : ''}
+                <span class="text-base font-black ${hasDiscount ? 'text-rose-700' : 'text-[#0D6857]'}">${D.escHtml(o.price)} د.ت</span>
+              </div>
             </div>
             ${o.desc ? `<p class="text-xs font-bold text-slate-700 leading-relaxed">• ${D.escHtml(o.desc)}</p>` : ''}
           </div>
@@ -337,7 +402,15 @@
               <button type="button" data-share-offer="${D.escHtml(o.id)}" class="rounded-lg bg-slate-100 hover:bg-slate-200 px-2.5 py-1 text-slate-700 transition">📤 مشاركة</button>
               <button type="button" data-report-offer="${D.escHtml(o.id)}" class="rounded-lg bg-rose-50 hover:bg-rose-100 px-2.5 py-1 text-rose-700 transition">🚩 إبلاغ</button>
             </div>
-            ${owner ? `<button type="button" data-mark-sold="${D.escHtml(o.id)}" class="rounded-lg bg-amber-100 hover:bg-amber-200 border border-amber-300 px-2.5 py-1 text-amber-950 transition">✅ تم البيع</button>` : ''}
+            ${owner ? `
+              <div class="flex flex-wrap items-center gap-1">
+                <button type="button" data-live-loc-offer="${D.escHtml(o.id)}" class="rounded-lg ${state.liveOfferId === o.id ? 'bg-rose-600 text-white' : 'bg-emerald-100 text-emerald-900 border border-emerald-300'} px-2 py-1 transition">
+                  ${state.liveOfferId === o.id ? '⏹️ إيقاف البث' : '📍 أنا هنا الآن'}
+                </button>
+                <button type="button" data-edit-price-offer="${D.escHtml(o.id)}" class="rounded-lg bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-1 text-blue-900 transition">🏷️ السعر</button>
+                <button type="button" data-mark-sold="${D.escHtml(o.id)}" class="rounded-lg bg-amber-100 hover:bg-amber-200 border border-amber-300 px-2 py-1 text-amber-950 transition">✅ تم البيع</button>
+              </div>
+            ` : ''}
           </div>
         </article>
       `;
@@ -430,7 +503,7 @@
     }).join('');
   }
 
-  // ==================== EMERGENCIES (CAREGUARD LIFECYCLE) ====================
+  // ==================== EMERGENCIES (CAREGUARD LIFECYCLE + OWNER REOPEN) ====================
   function getFilteredEmergencies() {
     return state.emergencies.filter((e) => {
       if (e.status !== 'open') return false;
@@ -448,14 +521,15 @@
     $('openEmergencyCounter').textContent = String(allOpen);
     $('navEmergBadge').textContent = String(allOpen);
 
-    // 1) بلاغاتي الطارئة النشطة (لصاحب البلاغ: تأكيد التنفيذ = إخفاء فوري)
+    // 1) بلاغاتي الطارئة النشطة (تأكيد التنفيذ + زر إعادة فتح لحرفي آخر عند عدم الاتفاق على السعر)
     const myOwned = myUid ? state.emergencies.filter((e) => e.userId === myUid && (e.status === 'open' || e.status === 'claimed')) : [];
     const ownedBox = $('myOwnedEmergBox');
     if (myOwned.length) {
       ownedBox.classList.remove('hidden');
       $('myOwnedEmergList').innerHTML = myOwned.map((e) => {
-        const stTxt = e.status === 'claimed'
-          ? (e.craftsmanStatus === 'completed' ? '✅ الحرفي حدّد أنه تم التنفيذ — يرجى التأكيد' : '🛠️ تم استلام البلاغ والحرفي في الطريق')
+        const isClaimed = e.status === 'claimed';
+        const stTxt = isClaimed
+          ? (e.craftsmanStatus === 'completed' ? '✅ الحرفي حدّد أنه تم التنفيذ — يرجى التأكيد' : '🛠️ تم استلام البلاغ — إن لم تتفقا على السعر يمكنك إعادة فتحه')
           : '⏳ مفتوح في انتظار استلام حرفي';
         return `
           <div class="rounded-xl border border-amber-300 bg-white p-3 space-y-2">
@@ -465,7 +539,10 @@
             </div>
             <p class="text-[11px] font-extrabold text-emerald-800">${stTxt}</p>
             <p class="text-xs font-semibold text-slate-700">${D.escHtml(e.desc)}</p>
-            <button type="button" data-owner-confirm-emerg="${D.escHtml(e.id)}" class="w-full rounded-xl bg-[#0D6857] hover:bg-[#094D40] py-2 text-xs font-black text-white">✅ تأكيد التنفيذ (إخفاء البلاغ فوراً)</button>
+            <div class="grid ${isClaimed ? 'grid-cols-2' : 'grid-cols-1'} gap-1.5">
+              <button type="button" data-owner-confirm-emerg="${D.escHtml(e.id)}" class="rounded-xl bg-[#0D6857] hover:bg-[#094D40] py-2 text-xs font-black text-white">✅ تأكيد التنفيذ (إخفاء)</button>
+              ${isClaimed ? `<button type="button" data-owner-reopen-emerg="${D.escHtml(e.id)}" class="rounded-xl bg-amber-100 hover:bg-amber-200 border border-amber-300 py-2 text-xs font-black text-amber-950">↩️ لم نتفق / إعادة فتح</button>` : ''}
+            </div>
           </div>
         `;
       }).join('');
@@ -473,7 +550,7 @@
       ownedBox.classList.add('hidden');
     }
 
-    // 2) البلاغات التي استلمها الحرفي (Google Maps + تم التنفيذ / لم يتم التنفيذ)
+    // 2) البلاغات التي استلمها الحرفي
     const myClaimed = myUid ? state.emergencies.filter((e) => e.status === 'claimed' && e.claimedBy === myUid) : [];
     const claimedWrap = $('myClaimedBox');
     if (myClaimed.length) {
@@ -512,7 +589,7 @@
       claimedWrap.classList.add('hidden');
     }
 
-    // 3) قائمة البلاغات المفتوحة
+    // 3) البلاغات المفتوحة
     const box = $('emergencyList');
     if (!list.length) {
       box.innerHTML = `
@@ -576,7 +653,19 @@
       const myOffers = state.offers.filter((o) => isOfferOwner(o) && o.status === 'active');
       const myCrafts = state.crafts.filter((c) => c.userId && c.userId === acc.userId);
       const items = [
-        ...myOffers.map((o) => `<div class="flex items-center justify-between gap-2 rounded-xl bg-[#F8FAF9] border border-[#E4EAE8] px-3 py-2 text-[#132A23]"><span class="truncate">🧺 ${D.escHtml(o.title)} (${D.escHtml(o.price)} د.ت)</span><button type="button" data-mark-sold="${D.escHtml(o.id)}" class="shrink-0 rounded-lg bg-amber-100 px-2 py-0.5 text-[10px] font-extrabold text-amber-950">✅ تم البيع</button></div>`),
+        ...myOffers.map((o) => `
+          <div class="rounded-xl bg-[#F8FAF9] border border-[#E4EAE8] px-3 py-2 text-[#132A23] space-y-1.5">
+            <div class="flex items-center justify-between gap-2">
+              <span class="truncate font-black">🧺 ${D.escHtml(o.title)} (${D.escHtml(o.price)} د.ت)</span>
+              <span class="shrink-0 text-[10px] font-bold text-amber-800">${D.escHtml(D.formatRemaining(o.expiresAt))}</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-1">
+              <button type="button" data-live-loc-offer="${D.escHtml(o.id)}" class="rounded-lg ${state.liveOfferId === o.id ? 'bg-rose-600 text-white' : 'bg-emerald-100 text-emerald-900'} px-2 py-1 text-[10px] font-extrabold">${state.liveOfferId === o.id ? '⏹️ إيقاف البث' : '📍 أنا هنا الآن'}</button>
+              <button type="button" data-edit-price-offer="${D.escHtml(o.id)}" class="rounded-lg bg-blue-100 text-blue-900 px-2 py-1 text-[10px] font-extrabold">🏷️ تعديل السعر</button>
+              <button type="button" data-mark-sold="${D.escHtml(o.id)}" class="rounded-lg bg-amber-100 text-amber-950 px-2 py-1 text-[10px] font-extrabold">✅ تم البيع</button>
+            </div>
+          </div>
+        `),
         ...myCrafts.map((c) => `<div class="rounded-xl bg-[#F8FAF9] border border-[#E4EAE8] px-3 py-2 text-[#132A23]">🛠️ ${D.escHtml(c.name)} (${D.escHtml(c.gov)})</div>`)
       ];
       $('myPostsList').innerHTML = items.length ? items.join('') : '<p class="text-slate-400">لم تنشر بعد أي عروض أو بطاقات بهذا الحساب.</p>';
@@ -665,6 +754,7 @@
       $('ofGov').value = state.gov;
       $('ofPhone').value = (state.account && state.account.phone) || '';
       $('ofSeller').value = (state.account && state.account.name) || '';
+      $('ofDurationHours').value = '24';
       state.pendingOfferPhoto = null;
       state.offerCoords = state.userCoords ? { ...state.userCoords } : null;
       $('ofPhotoPreview').classList.add('hidden');
@@ -692,6 +782,23 @@
       if (state.mapLayers[k]) btn.classList.add(...styles[k]);
       else btn.classList.add('bg-white', 'text-slate-500');
     });
+  }
+
+  function buildShareText(o) {
+    const url = 'https://compstory2-lang.github.io/kouthbayek/';
+    return {
+      url,
+      text: `🧺 ${o.title}\n💰 السعر: ${o.price} د.ت — 📍 ${o.gov}\n📞 ${D.cleanPhone(o.phone)}\nعبر تطبيق خوذ بايك: ${url}`
+    };
+  }
+
+  async function doSignOut(openSwitchMsg) {
+    stopLiveLocationBroadcast(true);
+    await D.signOutGoogle();
+    state.authUser = null;
+    state.account = null;
+    renderAll();
+    showToast(openSwitchMsg || 'تم تسجيل الخروج بنجاح — يمكنك الآن الدخول بحساب Google آخر.');
   }
 
   // ==================== EVENTS ====================
@@ -794,7 +901,6 @@
     renderAll();
   });
 
-  // إصلاح خانة البحث بالكامل (input + search + keyup مع تطبيع التشكيل)
   function onMarketSearchChange(e) {
     state.marketSearch = e.target.value || '';
     state.marketLimit = 15;
@@ -852,6 +958,52 @@
       },
       () => { $('ofGpsStatus').textContent = '⚠️ تعذر قراءة GPS؛ سيُستخدم موقع الولاية.'; }
     );
+  });
+
+  // Share Modal Buttons (Facebook, WhatsApp, Copy, Native)
+  $('shareFbBtn').addEventListener('click', () => {
+    if (!state.shareTarget) return;
+    const { url, text } = buildShareText(state.shareTarget);
+    const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`;
+    window.open(fbUrl, '_blank', 'noopener');
+    closeModal('shareModal');
+  });
+
+  $('shareWaBtn').addEventListener('click', () => {
+    if (!state.shareTarget) return;
+    const { text } = buildShareText(state.shareTarget);
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+    closeModal('shareModal');
+  });
+
+  $('shareCopyBtn').addEventListener('click', async () => {
+    if (!state.shareTarget) return;
+    const { text } = buildShareText(state.shareTarget);
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('📋 تم نسخ نص الإعلان والرابط — الصقه في فيسبوك أو ماسنجر!');
+    } catch (_) {
+      showToast('⚠️ تعذر النسخ التلقائي.');
+    }
+    closeModal('shareModal');
+  });
+
+  $('shareNativeBtn').addEventListener('click', async () => {
+    if (!state.shareTarget) return;
+    const { url, text } = buildShareText(state.shareTarget);
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Share) {
+      try {
+        await window.Capacitor.Plugins.Share.share({ title: state.shareTarget.title, text, url });
+        closeModal('shareModal');
+        return;
+      } catch (_) {}
+    }
+    if (navigator.share) {
+      navigator.share({ title: state.shareTarget.title, text, url }).catch(() => {});
+      closeModal('shareModal');
+      return;
+    }
+    showToast('💡 استخدم زر فيسبوك أو واتساب أو نسخ النص.');
   });
 
   document.addEventListener('click', async (e) => {
@@ -926,12 +1078,33 @@
       return;
     }
 
+    const liveBtn = e.target.closest('[data-live-loc-offer]');
+    if (liveBtn) {
+      const id = liveBtn.dataset.liveLocOffer;
+      if (state.liveOfferId === id) stopLiveLocationBroadcast();
+      else startLiveLocationBroadcast(id);
+      return;
+    }
+
+    const editPriceBtn = e.target.closest('[data-edit-price-offer]');
+    if (editPriceBtn) {
+      const o = state.offers.find((x) => x.id === editPriceBtn.dataset.editPriceOffer);
+      if (!o) return;
+      state.quickPriceTarget = o;
+      $('quickPriceTitle').textContent = o.title;
+      $('quickCurrentPrice').textContent = `السعر الحالي: ${o.price} د.ت`;
+      $('quickNewPrice').value = String(o.price);
+      openModal('quickPriceModal');
+      return;
+    }
+
     const soldBtn = e.target.closest('[data-mark-sold]');
     if (soldBtn) {
       const id = soldBtn.dataset.markSold;
+      if (state.liveOfferId === id) stopLiveLocationBroadcast(true);
       const res = await D.markOfferSold(id, state.account && state.account.userId);
       if (!res.ok) return showToast('⚠️ تعذر تحديث حالة الإعلان: ' + (res.error || 'حاول مجدداً'));
-      state.offers = state.offers.map((o) => o.id === id ? { ...o, status: 'sold' } : o);
+      state.offers = state.offers.map((o) => o.id === id ? { ...o, status: 'sold', liveLocation: false } : o);
       D.lsSet(D.STORE_KEYS.offers, state.offers);
       renderAll();
       showToast('✅ تم تحديد الإعلان كمباع وإخفاؤه من السوق.');
@@ -942,9 +1115,9 @@
     if (shareBtn) {
       const o = state.offers.find((x) => x.id === shareBtn.dataset.shareOffer);
       if (!o) return;
-      const text = `🧺 ${o.title}\n💰 السعر: ${o.price} د.ت — 📍 ${o.gov}\n📞 ${D.cleanPhone(o.phone)}\nعبر تطبيق خوذ بايك: ${window.location.href}`;
-      if (navigator.share) navigator.share({ title: o.title, text, url: window.location.href }).catch(() => {});
-      else window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+      state.shareTarget = o;
+      $('shareOfferTitle').textContent = `${o.title} — ${o.price} د.ت`;
+      openModal('shareModal');
       return;
     }
 
@@ -1013,6 +1186,18 @@
       D.lsSet(D.STORE_KEYS.emergencies, state.emergencies);
       renderAll();
       showToast('✅ تم تأكيد التنفيذ وإخفاء البلاغ فوراً. شكراً لك!');
+      return;
+    }
+
+    const ownerReopenBtn = e.target.closest('[data-owner-reopen-emerg]');
+    if (ownerReopenBtn) {
+      const id = ownerReopenBtn.dataset.ownerReopenEmerg;
+      const res = await D.reopenEmergencyOwner(id, state.account && state.account.userId);
+      if (!res.ok) return showToast('⚠️ تعذر إعادة فتح البلاغ: ' + (res.error || 'حاول مجدداً'));
+      state.emergencies = state.emergencies.map((em) => em.id === id ? { ...em, status: 'open', claimedBy: '', craftsmanStatus: 'pending' } : em);
+      D.lsSet(D.STORE_KEYS.emergencies, state.emergencies);
+      renderAll();
+      showToast('↩️ تم إلغاء الاستلام وإعادة فتح البلاغ لحرفي آخر.');
       return;
     }
 
@@ -1103,22 +1288,12 @@
     showToast('🎉 تم تفعيل حسابك بنجاح مع فترة تجربة مجانية لمدة 60 يوماً!');
   });
 
-  $('logoutBtn').addEventListener('click', async () => {
-    await D.signOutGoogle();
-    state.authUser = null;
-    state.account = null;
-    renderAccount();
-    showToast('تم تسجيل الخروج بنجاح.');
-  });
-
-  $('cancelGoogleStepBtn').addEventListener('click', async () => {
-    await D.signOutGoogle();
-    state.authUser = null;
-    state.account = null;
-    renderAccount();
-  });
+  $('logoutBtn').addEventListener('click', () => doSignOut());
+  $('switchAccountBtn').addEventListener('click', () => doSignOut('🔄 تم تسجيل الخروج — اضغط «المتابعة باستخدام Google» لاختيار حساب آخر.'));
+  $('cancelGoogleStepBtn').addEventListener('click', () => doSignOut());
 
   $('confirmDeleteAccBtn').addEventListener('click', async () => {
+    stopLiveLocationBroadcast(true);
     const uid = (state.account && state.account.userId) || (state.authUser && state.authUser.id) || '';
     await D.deleteUserAccountAndData(uid);
     state.authUser = null;
@@ -1128,7 +1303,21 @@
     showToast('✓ تم حذف حسابك وبياناتك نهائياً.');
   });
 
-  // ==================== SUBMIT: EMERGENCY ====================
+  $('quickPriceForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!state.quickPriceTarget || !isAccountActive()) return;
+    const newPrice = Number($('quickNewPrice').value);
+    if (!Number.isFinite(newPrice) || newPrice <= 0) return showToast('⚠️ أدخل سعراً صحيحاً أكبر من 0.');
+    const o = state.quickPriceTarget;
+    const res = await D.updateOfferPrice(o.id, state.account.userId, newPrice, Number(o.price));
+    if (!res.ok) return showToast('⚠️ تعذر تعديل السعر: ' + (res.error || 'حاول مجدداً'));
+    state.offers = state.offers.map((x) => x.id === o.id ? { ...x, price: newPrice, prevPrice: res.prevPrice } : x);
+    D.lsSet(D.STORE_KEYS.offers, state.offers);
+    closeModal('quickPriceModal');
+    renderAll();
+    showToast(res.prevPrice ? '🔥 تم تخفيض السعر وإضافة شارة «تخفيض الآن»!' : '✓ تم تحديث السعر بنجاح.');
+  });
+
   $('emergencyForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!requireActiveAccount('⚠️ لنشر بلاغ طارئ، فعّل حسابك أولاً.')) return;
@@ -1150,11 +1339,8 @@
       let imageUrl = '';
       if (state.pendingEmPhoto) {
         const up = await D.uploadOfferImage(state.pendingEmPhoto.blob, state.account.userId, 'em');
-        if (!up.ok) {
-          showToast('⚠️ تعذر رفع الصورة: ' + up.error + ' — سيتم النشر بدون صورة أو حاول مجدداً.');
-        } else {
-          imageUrl = up.url;
-        }
+        if (!up.ok) showToast('⚠️ تعذر رفع الصورة: ' + up.error);
+        else imageUrl = up.url;
       }
       const newEm = {
         id: 'em-' + Date.now(),
@@ -1189,7 +1375,6 @@
     }
   });
 
-  // ==================== SUBMIT: OFFER ====================
   $('offerForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!requireActiveAccount()) return;
@@ -1207,6 +1392,7 @@
     const mod = D.checkContentModeration(`${title} ${rawDesc} ${$('ofSeller').value}`);
     if (!mod.ok) return showToast(mod.reason);
 
+    const durHrs = Math.min(24, Math.max(1, Number($('ofDurationHours').value) || 24));
     const submitBtn = $('ofSubmitBtn');
     submitBtn.disabled = true;
     submitBtn.textContent = '⏳ جاري رفع الصورة ونشر العرض...';
@@ -1218,9 +1404,7 @@
       let imageUrl = '';
       if (state.pendingOfferPhoto) {
         const up = await D.uploadOfferImage(state.pendingOfferPhoto.blob, state.account.userId, 'of');
-        if (!up.ok) {
-          return showToast('⚠️ تعذر رفع الصورة إلى الخادم: ' + up.error);
-        }
+        if (!up.ok) return showToast('⚠️ تعذر رفع الصورة إلى الخادم: ' + up.error);
         imageUrl = up.url;
       }
 
@@ -1240,6 +1424,7 @@
         title,
         cat: $('ofCat').value,
         price,
+        prevPrice: null,
         gov: $('ofGov').value,
         phone: ph,
         seller: $('ofSeller').value.trim(),
@@ -1248,13 +1433,12 @@
         status: 'active',
         userId: state.account.userId || '',
         lat, lng,
+        liveLocation: false,
         createdAt: Date.now(),
-        expiresAt: Date.now() + C.OFFER_TTL_HOURS * C.HR
+        expiresAt: Date.now() + durHrs * C.HR
       };
       const res = await D.pushOffer(newOf);
-      if (!res.ok) {
-        return showToast('⚠️ تعذر نشر العرض: ' + (res.error || 'حاول مجدداً'));
-      }
+      if (!res.ok) return showToast('⚠️ تعذر نشر العرض: ' + (res.error || 'حاول مجدداً'));
       newOf.id = res.id || newOf.id;
       state.offers.unshift(newOf);
       D.lsSet(D.STORE_KEYS.offers, state.offers);
@@ -1262,14 +1446,13 @@
       state.pendingOfferPhoto = null;
       closeModal('offerModal');
       renderAll();
-      showToast('✓ تم نشر عرضك بنجاح (صالح لمدة 3 أيام)');
+      showToast(`✓ تم نشر عرضك (يُحذف تلقائياً بعد ${durHrs} ساعة)`);
     } finally {
       submitBtn.disabled = false;
-      submitBtn.textContent = 'نشر العرض الآن (صالح 3 أيام)';
+      submitBtn.textContent = 'نشر العرض الآن';
     }
   });
 
-  // ==================== SUBMIT: CRAFTSMAN ====================
   $('craftForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!requireActiveAccount()) return;
@@ -1303,9 +1486,7 @@
         lng: state.userCoords ? state.userCoords.lng : g.lng
       };
       const res = await D.pushCraft(newCr);
-      if (!res.ok) {
-        return showToast('⚠️ تعذر تسجيل الحرفي: ' + (res.error || 'حاول مجدداً'));
-      }
+      if (!res.ok) return showToast('⚠️ تعذر تسجيل الحرفي: ' + (res.error || 'حاول مجدداً'));
       newCr.id = res.id || newCr.id;
       state.crafts.unshift(newCr);
       D.lsSet(D.STORE_KEYS.crafts, state.crafts);
@@ -1319,14 +1500,11 @@
     }
   });
 
-  // ==================== SUBMIT: REPORT ====================
   $('reportForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!state.reportTarget) return;
     const res = await D.submitReport(state.reportTarget.type, state.reportTarget.id, $('reportReason').value, state.account && state.account.userId);
-    if (!res.ok) {
-      return showToast('⚠️ تعذر إرسال البلاغ: ' + (res.error || 'حاول مجدداً'));
-    }
+    if (!res.ok) return showToast('⚠️ تعذر إرسال البلاغ: ' + (res.error || 'حاول مجدداً'));
     closeModal('reportModal');
     showToast('🚩 شكراً لك، تم إرسال البلاغ لمراجعة الإعلان.');
   });

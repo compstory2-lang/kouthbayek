@@ -1,5 +1,5 @@
-// خوذ بايك — Service Worker v1.4 (تخزين الردود السليمة فقط res.ok)
-const CACHE_NAME = 'khouz-bayek-v1.4';
+// خوذ بايك — Service Worker v1.5 (تخزين الردود السليمة فقط res.ok)
+const CACHE_NAME = 'khouz-bayek-v1.5';
 const CORE_ASSETS = ['./', './index.html', './styles.css', './config.js', './data.js', './map.js', './app.js', './privacy.html'];
 
 self.addEventListener('install', (event) => {

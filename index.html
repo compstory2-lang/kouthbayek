@@ -112,7 +112,6 @@
             <input id="filterMaxPrice" type="number" min="0" step="0.5" placeholder="الكل" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-2 py-1.5 text-xs font-bold outline-none" dir="ltr" />
           </div>
         </div>
-        <!-- Vehicle-specific filters (shown automatically when vehicles category is selected) -->
         <div id="vehicleFilterRow" class="hidden grid grid-cols-3 gap-2 pt-1.5 border-t border-slate-100">
           <input id="filterVehBrand" type="text" placeholder="الماركة (Clio..)" class="rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-2 py-1.5 text-xs font-bold outline-none" />
           <input id="filterVehYear" type="number" min="1980" max="2027" placeholder="السنة من (2015)" class="rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-2 py-1.5 text-xs font-bold outline-none" dir="ltr" />
@@ -150,16 +149,10 @@
 
       <p class="text-xs font-bold text-slate-600">اختر الاختصاص لعرض أقرب أصحاب الصنعة ودليل الأسعار التقريبي</p>
 
-      <!-- Craft Group Pills -->
       <div id="craftGroupBar" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1"></div>
-
-      <!-- 2-Column Craft Specialty Grid -->
       <div id="craftCatBar" class="grid grid-cols-2 gap-2.5"></div>
-
-      <!-- Indicative Craft Price Observatory Card -->
       <div id="craftPriceGuideBox" class="hidden rounded-3xl border border-amber-200 bg-[#FFF9EC] p-3.5 shadow-sm space-y-2"></div>
 
-      <!-- Active Specialty Header + Crafts List -->
       <div class="flex items-center justify-between pt-1">
         <h2 id="craftListTitle" class="text-sm font-black text-[#132A23]">🛠️ أقرب الحرفيين المتاحين</h2>
         <span id="craftResultCount" class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-extrabold text-emerald-900">0 حرفي</span>
@@ -175,14 +168,14 @@
           <span class="shrink-0 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-black"><span id="openEmergencyCounter">0</span> مفتوح</span>
         </div>
         <p class="text-xs font-semibold text-rose-100 leading-relaxed">
-          عندك عطل مستعجل في الدار أو الكرهبة؟ حط بلاغك مع موقعك الدقيق (وصورة اختيارية)، وأي حرفي قريب يستلمه ويتوجّه إليك عبر Google Maps. وعند تأكيدك للتنفيذ يختفي البلاغ فوراً.
+          عندك عطل مستعجل في الدار أو الكرهبة؟ حط بلاغك مع موقعك الدقيق (وصورة اختيارية)، وأي حرفي قريب يستلمه ويتوجّه إليك عبر Google Maps. إذا لم تتفقا على السعر يمكنك إعادة فتح البلاغ لحرفي آخر بضغطة واحدة.
         </p>
         <button id="openEmergencyModalBtn" type="button" class="w-full rounded-2xl bg-white hover:bg-rose-50 active:scale-[0.99] py-3 text-sm font-black text-[#B91C1C] shadow-sm transition">+ أبلغ عن عطل طارئ الآن</button>
       </div>
 
-      <!-- Owner's Active Emergencies (Confirm Completion -> Instant Hide) -->
+      <!-- Owner's Active Emergencies (Confirm Completion OR Reopen if price disagreed) -->
       <div id="myOwnedEmergBox" class="hidden rounded-2xl border-2 border-amber-300 bg-amber-50/70 p-3.5 shadow-sm space-y-2">
-        <h3 class="text-xs font-black text-amber-950">📋 بلاغاتي الطارئة النشطة (أكّد التنفيذ لإخفاء البلاغ فوراً)</h3>
+        <h3 class="text-xs font-black text-amber-950">📋 بلاغاتي الطارئة النشطة</h3>
         <div id="myOwnedEmergList" class="space-y-2"></div>
       </div>
 
@@ -297,6 +290,8 @@
           <h4 class="text-xs font-black text-[#132A23] mb-2">📌 منشوراتي النشطة</h4>
           <div id="myPostsList" class="space-y-2 text-xs text-slate-500 font-bold"></div>
         </div>
+        <!-- Prominent Logout / Switch Account Button -->
+        <button id="switchAccountBtn" type="button" class="w-full rounded-2xl border-2 border-slate-300 bg-white py-3 text-xs font-black text-slate-800 hover:bg-slate-50 transition">🔄 تسجيل الخروج والدخول بحساب Google آخر</button>
         <button id="openDeleteAccModalBtn" type="button" class="w-full rounded-2xl border border-rose-200 bg-white py-2.5 text-xs font-black text-rose-700 hover:bg-rose-50 transition">🗑️ حذف حسابي وبياناتي نهائياً</button>
       </div>
     </section>
@@ -329,7 +324,7 @@
     </div>
   </nav>
 
-  <!-- MODAL: EMERGENCY (Photo + Mandatory GPS/Map + Distance) -->
+  <!-- MODAL: EMERGENCY -->
   <div id="emergencyModal" class="hidden fixed inset-0 z-50 kb-modal-backdrop flex items-end sm:items-center justify-center p-2 sm:p-4">
     <div class="w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl bg-white p-4 shadow-2xl space-y-3">
       <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
@@ -385,11 +380,11 @@
     </div>
   </div>
 
-  <!-- MODAL: ADD OFFER -->
+  <!-- MODAL: ADD OFFER (24h Max + Short-Hour Flash Options) -->
   <div id="offerModal" class="hidden fixed inset-0 z-50 kb-modal-backdrop flex items-end sm:items-center justify-center p-2 sm:p-4">
     <div class="w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl bg-white p-4 shadow-2xl space-y-3">
       <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
-        <h3 class="text-base font-black text-[#0D6857]">🧺 نشر عرض جديد (يختفي بعد 3 أيام)</h3>
+        <h3 class="text-base font-black text-[#0D6857]">🧺 نشر عرض جديد (يُحذف تلقائياً بعد 24 ساعة)</h3>
         <button type="button" data-close-modal="offerModal" class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">✕</button>
       </div>
       <form id="offerForm" class="space-y-3">
@@ -413,6 +408,16 @@
             <label for="ofPrice" class="block text-xs font-extrabold text-slate-700 mb-1">السعر (د.ت)</label>
             <input id="ofPrice" type="number" min="0.001" step="0.001" required placeholder="5.250" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]" dir="ltr" />
           </div>
+        </div>
+        <div>
+          <label for="ofDurationHours" class="block text-xs font-extrabold text-slate-700 mb-1">⏱️ مدة العرض (يُحذف تلقائياً عند الانتهاء)</label>
+          <select id="ofDurationHours" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]">
+            <option value="24">🕒 24 ساعة (المدة القياسية)</option>
+            <option value="12">⚡ 12 ساعة (عرض يومي سريع)</option>
+            <option value="6">⚡ 6 ساعات (بائع متجول / نصبة)</option>
+            <option value="4">⚡ 4 ساعات (عرض سريع)</option>
+            <option value="2">⚡ ساعتان فقط (كمية محدودة جداً)</option>
+          </select>
         </div>
         <div id="vehicleSpecsBox" class="hidden rounded-2xl border border-emerald-200 bg-[#F8FAF9] p-3 space-y-2">
           <p class="text-[11px] font-black text-emerald-900">🚗 مواصفات السيارة أو الدراجة (اختياري)</p>
@@ -450,8 +455,52 @@
           <button id="ofGpsBtn" type="button" class="rounded-xl border border-emerald-300 bg-emerald-50 py-2 px-2.5 text-xs font-extrabold text-emerald-900 hover:bg-emerald-100">📍 موقعي الدقيق</button>
         </div>
         <p id="ofGpsStatus" class="text-[10px] font-bold text-slate-500"></p>
-        <button id="ofSubmitBtn" type="submit" class="w-full rounded-xl bg-[#0D6857] hover:bg-[#094D40] py-2.5 text-sm font-black text-white">نشر العرض الآن (صالح 3 أيام)</button>
+        <button id="ofSubmitBtn" type="submit" class="w-full rounded-xl bg-[#0D6857] hover:bg-[#094D40] py-2.5 text-sm font-black text-white">نشر العرض الآن</button>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL: QUICK PRICE EDIT (Triggers 🔥 تخفيض الآن when lowered) -->
+  <div id="quickPriceModal" class="hidden fixed inset-0 z-50 kb-modal-backdrop flex items-end sm:items-center justify-center p-2 sm:p-4">
+    <div class="w-full max-w-md rounded-3xl bg-white p-4 shadow-2xl space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+        <h3 class="text-sm font-black text-[#0D6857]">🏷️ تعديل السعر السريع</h3>
+        <button type="button" data-close-modal="quickPriceModal" class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">✕</button>
+      </div>
+      <p id="quickPriceTitle" class="text-xs font-bold text-slate-700 truncate"></p>
+      <p id="quickCurrentPrice" class="text-xs font-extrabold text-amber-800"></p>
+      <form id="quickPriceForm" class="space-y-3">
+        <div>
+          <label for="quickNewPrice" class="block text-xs font-extrabold text-slate-700 mb-1">السعر الجديد (د.ت) — إذا نزل السعر تظهر شارة «تخفيض الآن 🔥»</label>
+          <input id="quickNewPrice" type="number" min="0.001" step="0.001" required class="w-full rounded-xl border-2 border-[#0D6857] bg-[#F8FAF9] px-3 py-2.5 text-sm font-black outline-none" dir="ltr" />
+        </div>
+        <button type="submit" class="w-full rounded-xl bg-[#0D6857] hover:bg-[#094D40] py-2.5 text-xs font-black text-white">حفظ السعر الجديد</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: SHARE OFFER (Facebook + WhatsApp + Copy + Native) -->
+  <div id="shareModal" class="hidden fixed inset-0 z-50 kb-modal-backdrop flex items-end sm:items-center justify-center p-2 sm:p-4">
+    <div class="w-full max-w-md rounded-3xl bg-white p-4 shadow-2xl space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+        <h3 class="text-sm font-black text-[#132A23]">📤 مشاركة الإعلان</h3>
+        <button type="button" data-close-modal="shareModal" class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">✕</button>
+      </div>
+      <p id="shareOfferTitle" class="text-xs font-bold text-slate-600 truncate"></p>
+      <div class="grid grid-cols-2 gap-2">
+        <button id="shareFbBtn" type="button" class="flex items-center justify-center gap-1.5 rounded-2xl bg-[#1877F2] hover:bg-blue-700 py-3 text-xs font-black text-white shadow-sm transition">
+          <span>📘</span><span>فيسبوك</span>
+        </button>
+        <button id="shareWaBtn" type="button" class="flex items-center justify-center gap-1.5 rounded-2xl bg-[#25D366] hover:bg-emerald-600 py-3 text-xs font-black text-white shadow-sm transition">
+          <span>💬</span><span>واتساب</span>
+        </button>
+        <button id="shareCopyBtn" type="button" class="flex items-center justify-center gap-1.5 rounded-2xl border border-[#DCE4E1] bg-[#F8FAF9] hover:bg-slate-100 py-3 text-xs font-black text-[#132A23] transition">
+          <span>📋</span><span>نسخ النص والرابط</span>
+        </button>
+        <button id="shareNativeBtn" type="button" class="flex items-center justify-center gap-1.5 rounded-2xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 py-3 text-xs font-black text-emerald-900 transition">
+          <span>📤</span><span>تطبيقات أخرى</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -540,7 +589,7 @@
       <div class="space-y-2.5 text-xs sm:text-sm font-semibold text-slate-700 leading-relaxed">
         <p><strong>1. طبيعة المنصة:</strong> تعمل منصة <strong>«خوذ بايك»</strong> كدليل إعلاني وخدمي رقمي يربط بين المواطنين والمعلنين والحرفيين عبر الولايات التونسية الـ 24.</p>
         <p><strong>2. سياسة المحتوى والرقابة الذاتية:</strong> يُمنع منعاً باتاً نشر إعلانات الخمور أو الممنوعات أو الألفاظ السوقية أو الإعلانات غير الملائمة للفئة، ويُخفى تلقائياً أي إعلان يتلقى 3 بلاغات.</p>
-        <p><strong>3. صلاحية الإعلانات:</strong> تختفي الإعلانات تلقائياً بعد <strong>3 أيام</strong> (72 ساعة) سواء بيعت أم لا، ويمكن لصاحب الإعلان إغلاقه فوراً بزر «تم البيع».</p>
+        <p><strong>3. صلاحية الإعلانات:</strong> تُحذف كل إعلانات البيع والشراء تلقائياً بعد <strong>24 ساعة</strong> (أو بعد المدة القصيرة المختارة بالساعات)، ويمكن لصاحب الإعلان إغلاقه فوراً بزر «تم البيع».</p>
         <p><strong>4. بلاغات الطوارئ 24/24:</strong> خدمة البلاغات للتنبيه والمساعدة المحلية ولا تغني عن الاتصال بالحماية المدنية (<strong>198</strong>) أو الشرطة (<strong>197</strong>) أو الحرس الوطني (<strong>193</strong>) أو الإسعاف (<strong>190</strong>).</p>
       </div>
       <button type="button" data-close-modal="termsModal" class="w-full rounded-xl bg-[#0D6857] py-2.5 text-sm font-black text-white">فهمت وموافق</button>
