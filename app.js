@@ -1103,29 +1103,25 @@
       await navigator.clipboard.writeText(text);
     } catch (_) {}
 
-    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Share) {
-      try {
-        await window.Capacitor.Plugins.Share.share({ title: state.shareTarget.title || 'خوذ بايك', text, url });
-        closeModal('shareModal');
-        return;
-      } catch (_) {}
-    }
-
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: state.shareTarget.title || 'خوذ بايك', text, url });
-        closeModal('shareModal');
-        return;
-      } catch (err) {
-        if (err && err.name === 'AbortError') {
-          showToast('📋 النص منسوخ — يمكنك لصقه في ماسنجر في أي وقت.');
-          return;
-        }
-      }
-    }
-
-    showToast('📋 تم نسخ الإعلان والرابط — افتح ماسنجر والصقه مباشرة في المحادثة.');
     closeModal('shareModal');
+    showToast('📋 تم نسخ النص — جاري فتح ماسنجر...');
+
+    const isAndroid = /android/i.test(navigator.userAgent);
+    const messengerIntentUrl = isAndroid
+      ? `intent://#Intent;package=com.facebook.orca;action=android.intent.action.SEND;type=text/plain;S.${encodeURIComponent('android.intent.extra.TEXT')}=${encodeURIComponent(text)};end`
+      : `fb-messenger://share?link=${encodeURIComponent(url)}`;
+
+    setTimeout(() => {
+      try {
+        if (isAndroid) {
+          window.location.href = messengerIntentUrl;
+        } else {
+          window.open(messengerIntentUrl, '_blank', 'noopener');
+        }
+      } catch (_) {
+        window.open(`https://www.messenger.com/`, '_blank', 'noopener');
+      }
+    }, 180);
   });
 
   $('shareWaBtn').addEventListener('click', () => {
