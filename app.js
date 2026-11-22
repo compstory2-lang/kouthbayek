@@ -124,6 +124,22 @@
     return distanceOf(item) <= maxKm;
   }
 
+  function getGoogleMapsDirUrl(item) {
+    if (!item) return '';
+    const lat = Number(item.lat);
+    const lng = Number(item.lng);
+    if (Number.isFinite(lat) && Number.isFinite(lng) && !(lat === 0 && lng === 0)) {
+      return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(lat + ',' + lng)}`;
+    }
+    if (item.gov) {
+      const g = D.getGovObj(item.gov);
+      if (g && Number.isFinite(Number(g.lat)) && Number.isFinite(Number(g.lng))) {
+        return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(g.lat + ',' + g.lng)}`;
+      }
+    }
+    return '';
+  }
+
   function getDistBadge(item) {
     if (!item || !Number.isFinite(Number(item.lat)) || !Number.isFinite(Number(item.lng))) return '';
     const km = distanceOf(item);
@@ -425,10 +441,11 @@
             </div>
             ${o.desc ? `<p class="text-xs font-bold text-slate-700 leading-relaxed">• ${D.escHtml(o.desc)}</p>` : ''}
           </div>
-          <div class="grid grid-cols-3 gap-1.5 pt-1">
+          <div class="grid grid-cols-2 gap-1.5 pt-1">
             ${ph ? `<a href="tel:+216${ph}" class="flex items-center justify-center gap-1 rounded-xl bg-[#0D6857] py-2.5 text-xs font-extrabold text-white hover:bg-[#094D40] transition"><span>📞</span><span>اتصال</span></a>` : '<span></span>'}
             ${ph ? `<a href="https://wa.me/216${ph}?text=${encodeURIComponent('مرحباً، بخصوص عرضك على خوذ بايك: ' + o.title)}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl bg-emerald-600 py-2.5 text-xs font-extrabold text-white hover:bg-emerald-700 transition"><span>💬</span><span>واتساب</span></a>` : '<span></span>'}
-            <button type="button" data-focus-map="market:${D.escHtml(o.id)}" class="flex items-center justify-center gap-1 rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] py-2.5 text-xs font-extrabold text-[#132A23] hover:bg-emerald-50 transition"><span>🗺️</span><span>الخريطة</span></button>
+            <button type="button" data-focus-map="market:${D.escHtml(o.id)}" class="flex items-center justify-center gap-1 rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] py-2 text-xs font-extrabold text-[#132A23] hover:bg-emerald-50 transition"><span>🗺️</span><span>الخريطة</span></button>
+            ${getGoogleMapsDirUrl(o) ? `<a href="${D.escHtml(getGoogleMapsDirUrl(o))}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl bg-blue-700 hover:bg-blue-800 py-2 text-xs font-extrabold text-white transition"><span>🧭</span><span>قوقل ماب</span></a>` : '<span></span>'}
           </div>
           <div class="flex flex-wrap items-center justify-between gap-1.5 pt-1.5 border-t border-slate-100 text-[11px] font-extrabold">
             <div class="flex items-center gap-1.5">
