@@ -1046,6 +1046,7 @@
     try {
       await navigator.clipboard.writeText(text);
     } catch (_) {}
+
     if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Share) {
       try {
         await window.Capacitor.Plugins.Share.share({ title: state.shareTarget.title || 'خوذ بايك', text, url });
@@ -1053,17 +1054,21 @@
         return;
       } catch (_) {}
     }
+
     if (navigator.share) {
       try {
         await navigator.share({ title: state.shareTarget.title || 'خوذ بايك', text, url });
         closeModal('shareModal');
         return;
       } catch (err) {
-        if (err && err.name === 'AbortError') return;
+        if (err && err.name === 'AbortError') {
+          showToast('📋 النص منسوخ — يمكنك لصقه في ماسنجر في أي وقت.');
+          return;
+        }
       }
     }
-    window.open(`https://www.facebook.com/dialog/send?link=${encodeURIComponent(url)}&app_id=966242223397117&redirect_uri=${encodeURIComponent(url)}`, '_blank', 'noopener');
-    showToast('✉️ تم نسخ النص لسهولة لصقه في ماسنجر!');
+
+    showToast('📋 تم نسخ الإعلان والرابط — افتح ماسنجر والصقه مباشرة في المحادثة.');
     closeModal('shareModal');
   });
 
