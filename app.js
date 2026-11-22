@@ -1040,6 +1040,33 @@
     closeModal('shareModal');
   });
 
+  $('shareMsgBtn').addEventListener('click', async () => {
+    if (!state.shareTarget) return;
+    const { url, text } = buildShareText(state.shareTarget, state.shareKind);
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (_) {}
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Share) {
+      try {
+        await window.Capacitor.Plugins.Share.share({ title: state.shareTarget.title || 'خوذ بايك', text, url });
+        closeModal('shareModal');
+        return;
+      } catch (_) {}
+    }
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: state.shareTarget.title || 'خوذ بايك', text, url });
+        closeModal('shareModal');
+        return;
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+      }
+    }
+    window.open(`https://www.facebook.com/dialog/send?link=${encodeURIComponent(url)}&app_id=966242223397117&redirect_uri=${encodeURIComponent(url)}`, '_blank', 'noopener');
+    showToast('✉️ تم نسخ النص لسهولة لصقه في ماسنجر!');
+    closeModal('shareModal');
+  });
+
   $('shareWaBtn').addEventListener('click', () => {
     if (!state.shareTarget) return;
     const { text } = buildShareText(state.shareTarget, state.shareKind);
