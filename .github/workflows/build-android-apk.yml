@@ -1,4 +1,4 @@
- name: Build Khouz Bayek Android APK
+name: Build Khouz Bayek Android APK
 
 on:
   workflow_dispatch:
