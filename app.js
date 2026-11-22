@@ -1104,30 +1104,28 @@
       navigator.clipboard.writeText(text).catch(() => {});
     }
 
+    closeModal('shareModal');
+
     if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Share) {
-      window.Capacitor.Plugins.Share.share({ title: state.shareTarget.title || 'خوذ بايك', text, url })
-        .then(() => closeModal('shareModal'))
-        .catch(() => {
-          window.open('https://www.messenger.com/', '_blank', 'noopener');
-          closeModal('shareModal');
-        });
+      window.Capacitor.Plugins.Share.share({ title: state.shareTarget.title || 'خوذ بايك', text, url }).catch(() => {});
+      return;
+    }
+
+    const isAndroid = /android/i.test(navigator.userAgent);
+    if (isAndroid) {
+      const fallbackUrl = encodeURIComponent('https://www.messenger.com/');
+      const intentUrl = `intent://#Intent;action=android.intent.action.SEND;type=text/plain;package=com.facebook.orca;S.android.intent.extra.TEXT=${encodeURIComponent(text)};S.browser_fallback_url=${fallbackUrl};end`;
+      window.location.href = intentUrl;
       return;
     }
 
     if (navigator.share) {
-      navigator.share({ title: state.shareTarget.title || 'خوذ بايك', text, url })
-        .then(() => closeModal('shareModal'))
-        .catch((err) => {
-          if (err && err.name === 'AbortError') return;
-          window.open('https://www.messenger.com/', '_blank', 'noopener');
-          closeModal('shareModal');
-        });
+      navigator.share({ title: state.shareTarget.title || 'خوذ بايك', text, url }).catch(() => {});
       return;
     }
 
     window.open('https://www.messenger.com/', '_blank', 'noopener');
     showToast('📋 تم نسخ النص — الصقه في ماسنجر مباشرة.');
-    closeModal('shareModal');
   });
 
   $('shareWaBtn').addEventListener('click', () => {
