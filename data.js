@@ -474,6 +474,40 @@ window.KB_DATA = (() => {
     }
   }
 
+  async function updateCraft(c, userId) {
+    if (!sbClient || !userId) return { ok: false, error: 'يجب تسجيل الدخول' };
+    try {
+      const { error } = await sbClient.from('kb_craftsmen').update({
+        name: c.name,
+        specialty: c.spec,
+        governorate: c.gov,
+        area: c.area,
+        phone: c.phone,
+        description: c.note,
+        lat: c.lat,
+        lng: c.lng
+      }).eq('id', c.id).eq('user_id', userId);
+      syncCache.at = 0;
+      return { ok: !error, error: error ? error.message : '' };
+    } catch (err) {
+      return { ok: false, error: (err && err.message) || 'تعذر تعديل بطاقة الحرفي' };
+    }
+  }
+
+  async function deleteCraft(craftId, userId) {
+    if (!sbClient || !userId) return { ok: false, error: 'يجب تسجيل الدخول' };
+    try {
+      const { error } = await sbClient.from('kb_craftsmen')
+        .delete()
+        .eq('id', craftId)
+        .eq('user_id', userId);
+      syncCache.at = 0;
+      return { ok: !error, error: error ? error.message : '' };
+    } catch (err) {
+      return { ok: false, error: (err && err.message) || 'تعذر حذف بطاقة الحرفي' };
+    }
+  }
+
   async function pushEmergency(e) {
     if (!sbClient) return { ok: false, id: e.id, error: 'غير متصل بالخادم' };
     try {
@@ -629,7 +663,7 @@ window.KB_DATA = (() => {
     compressImageFile, uploadOfferImage,
     signInWithGoogle, getAuthUser, fetchCloudAccount, saveCloudAccount, signOutGoogle, deleteUserAccountAndData,
     syncFromSupabase, pushOffer, markOfferSold, updateOfferPrice, updateOfferLiveLocation,
-    pushCraft, pushEmergency, claimEmergencyAtomic, markEmergencyCraftsmanStatus,
+    pushCraft, updateCraft, deleteCraft, pushEmergency, claimEmergencyAtomic, markEmergencyCraftsmanStatus,
     confirmEmergencyOwner, reopenEmergencyOwner, submitReport, submitAdminMessage, subscribeEmergencies
   };
 })();

@@ -1,10 +1,11 @@
-// خوذ بايك — منطق الواجهة الكامل (v1.5-TN: أنا هنا الآن، تخفيض السعر، 24س، مشاركة فيسبوك، إعادة فتح الطوارئ، تبديل الحساب)
+// خوذ بايك — منطق الواجهة الكامل (v1.5-TN: أنا هنا الآن، تخفيض السعر، 24س، مشاركة فيسبوك، إعادة فتح الطوارئ، تبديل الحساب، حماية المعطيات)
 (() => {
   'use strict';
 
   const C = window.KB_CONFIG;
   const D = window.KB_DATA;
   const M = window.KB_MAP;
+  const P = window.KB_PRIVACY;
   const $ = (id) => document.getElementById(id);
 
   const savedPrefs = D.lsGet(D.STORE_KEYS.prefs, { gov: 'قابس', radius: 'gov' });
@@ -46,6 +47,8 @@
     reportTarget: null,
     quickPriceTarget: null,
     shareTarget: null,
+    editingCraftId: null,
+    sharedOfferId: null,
     liveWatchId: null,
     liveOfferId: null,
     lastLivePushAt: 0
@@ -365,7 +368,7 @@
              <div class="mt-1.5 text-xs font-extrabold text-[#0D6857]/80">${D.escHtml(cat.label)} • ${D.escHtml(o.gov)}</div>
            </div>`;
       return `
-        <article class="rounded-3xl ${cardBorder} bg-white p-4 space-y-3">
+        <article id="offer-card-${D.escHtml(o.id)}" class="rounded-3xl ${state.sharedOfferId === o.id ? 'border-2 border-[#0D6857] ring-4 ring-emerald-200/70 shadow-lg' : cardBorder} bg-white p-4 space-y-3">
           <div class="flex flex-wrap items-center justify-between gap-1.5">
             <div class="flex flex-wrap items-center gap-1.5">
               ${topBadge}
@@ -517,7 +520,7 @@
     const myUid = state.account && state.account.userId;
     const allOpen = state.emergencies.filter((e) => e.status === 'open').length;
     const list = getFilteredEmergencies();
-    $('emergBannerTitle').textContent = `🚨 طوارئ المواطنين 24/24 — ${state.gov}`;
+    $('emergBannerTitle').textContent = `⚡ صيانة عاجلة — ${state.gov}`;
     $('openEmergencyCounter').textContent = String(allOpen);
     $('navEmergBadge').textContent = String(allOpen);
 
@@ -534,7 +537,7 @@
         return `
           <div class="rounded-xl border border-amber-300 bg-white p-3 space-y-2">
             <div class="flex items-center justify-between gap-2 text-xs font-black text-amber-950">
-              <span>🚨 ${D.escHtml(e.type)} (${D.escHtml(e.gov)})</span>
+              <span>⚡ ${D.escHtml(e.type)} (${D.escHtml(e.gov)})</span>
               <span class="text-[10px] font-bold text-slate-500">${D.escHtml(D.formatAgo(e.createdAt))}</span>
             </div>
             <p class="text-[11px] font-extrabold text-emerald-800">${stTxt}</p>
@@ -594,8 +597,8 @@
     if (!list.length) {
       box.innerHTML = `
         <div class="rounded-3xl border border-[#E4EAE8] bg-white p-6 text-center space-y-2 shadow-sm">
-          <p class="text-sm font-extrabold text-slate-600">لا توجد بلاغات طوارئ مفتوحة حالياً في نطاق ${D.escHtml(state.gov)}.</p>
-          <button type="button" data-expand-all="1" class="rounded-xl bg-rose-50 px-3.5 py-1.5 text-xs font-extrabold text-rose-700">عرض بلاغات كل تونس</button>
+          <p class="text-sm font-extrabold text-slate-600">لا توجد طلبات صيانة عاجلة مفتوحة حالياً في نطاق ${D.escHtml(state.gov)}.</p>
+          <button type="button" data-expand-all="1" class="rounded-xl bg-rose-50 px-3.5 py-1.5 text-xs font-extrabold text-rose-700">عرض طلبات كل تونس</button>
         </div>
       `;
       return;
@@ -609,12 +612,12 @@
         <article class="rounded-3xl border border-rose-200 bg-white p-4 shadow-sm space-y-2.5">
           <div class="flex items-start justify-between gap-2">
             <div class="flex flex-wrap items-center gap-1.5">
-              <span class="rounded-full bg-rose-100 px-2.5 py-0.5 text-[11px] font-black text-rose-800">🚨 ${D.escHtml(e.type)}</span>
+              <span class="rounded-full bg-rose-100 px-2.5 py-0.5 text-[11px] font-black text-rose-800">⚡ ${D.escHtml(e.type)}</span>
               <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">🕒 ${D.escHtml(D.formatAgo(e.createdAt))}</span>
             </div>
             <span class="text-[11px] font-extrabold text-rose-700">📍 ${D.escHtml(e.gov)}${dist ? ' • ' + D.escHtml(dist) : ''}</span>
           </div>
-          ${e.imageUrl ? `<img src="${D.escHtml(e.imageUrl)}" alt="صورة الطارئ" loading="lazy" class="h-44 w-full rounded-2xl object-cover border border-rose-100" />` : ''}
+          ${e.imageUrl ? `<img src="${D.escHtml(e.imageUrl)}" alt="صورة العطب" loading="lazy" class="h-44 w-full rounded-2xl object-cover border border-rose-100" />` : ''}
           <p class="text-xs sm:text-sm font-bold text-slate-800 leading-relaxed">${D.escHtml(e.desc)}</p>
           <div class="flex flex-wrap items-center gap-1.5 pt-1 border-t border-rose-100">
             ${ph ? `<a href="tel:+216${ph}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-rose-600 py-2 px-2.5 text-xs font-extrabold text-white"><span>📞</span><span>اتصال</span></a>` : ''}
@@ -643,12 +646,7 @@
       $('dashMeta').textContent = `${roleLbl} • +216 ${acc.phone} • ${acc.gov}`;
       $('dashEmail').textContent = acc.email ? `📧 ${acc.email}` : '';
 
-      const endMs = acc.trialEndsAt || (acc.createdAt + 60 * 24 * C.HR);
-      const leftDays = Math.max(0, Math.ceil((endMs - Date.now()) / (24 * C.HR)));
-      const pct = Math.max(5, Math.min(100, Math.round((leftDays / 60) * 100)));
-      $('trialDaysLeft').textContent = `متبقي ${leftDays} يوماً`;
-      $('trialBar').style.width = `${pct}%`;
-      $('trialEndTxt').textContent = `تنتهي التجربة المجانية في: ${new Date(endMs).toLocaleDateString('ar-TN')}`;
+
 
       const myOffers = state.offers.filter((o) => isOfferOwner(o) && o.status === 'active');
       const myCrafts = state.crafts.filter((c) => c.userId && c.userId === acc.userId);
@@ -666,7 +664,18 @@
             </div>
           </div>
         `),
-        ...myCrafts.map((c) => `<div class="rounded-xl bg-[#F8FAF9] border border-[#E4EAE8] px-3 py-2 text-[#132A23]">🛠️ ${D.escHtml(c.name)} (${D.escHtml(c.gov)})</div>`)
+        ...myCrafts.map((c) => `
+          <div class="rounded-xl bg-[#F8FAF9] border border-[#E4EAE8] px-3 py-2 text-[#132A23] space-y-1.5">
+            <div class="flex items-center justify-between gap-2">
+              <span class="truncate font-black">🛠️ ${D.escHtml(c.name)} (${D.escHtml(c.gov)})</span>
+              <span class="shrink-0 text-[10px] font-bold text-emerald-800">${D.escHtml(D.getCraftCatInfo(c.spec).label)}</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-1">
+              <button type="button" data-edit-craft="${D.escHtml(c.id)}" class="rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-900 px-2.5 py-1 text-[10px] font-extrabold transition">✏️ تعديل</button>
+              <button type="button" data-delete-craft="${D.escHtml(c.id)}" class="rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 px-2.5 py-1 text-[10px] font-extrabold transition">🗑️ حذف</button>
+            </div>
+          </div>
+        `)
       ];
       $('myPostsList').innerHTML = items.length ? items.join('') : '<p class="text-slate-400">لم تنشر بعد أي عروض أو بطاقات بهذا الحساب.</p>';
       return;
@@ -727,10 +736,11 @@
   function openModal(id) {
     if (id === 'offerModal' && !requireActiveAccount('⚠️ لنشر عرض، فعّل حسابك عبر Google ورقم الهاتف التونسي أولاً.')) return;
     if (id === 'craftModal' && !requireActiveAccount('⚠️ لإضافة مهنتك، فعّل حسابك عبر Google ورقم الهاتف التونسي أولاً.')) return;
-    if (id === 'emergencyModal' && !requireActiveAccount('⚠️ لنشر بلاغ طارئ، فعّل حسابك عبر Google ورقم الهاتف التونسي أولاً.')) return;
+    if (id === 'emergencyModal' && !requireActiveAccount('⚠️ لنشر طلب صيانة عاجلة، فعّل حسابك عبر Google ورقم الهاتف التونسي أولاً.')) return;
 
     $(id).classList.remove('hidden');
     if (id === 'emergencyModal') {
+      if (P) P.clearConsentError('emPrivacyCheck');
       $('emGov').value = state.gov;
       $('emPhone').value = (state.account && state.account.phone) || '';
       state.pendingEmPhoto = null;
@@ -751,6 +761,7 @@
         updateEmDistancePreview();
       });
     } else if (id === 'offerModal') {
+      if (P) P.clearConsentError('offerPrivacyCheck');
       $('ofGov').value = state.gov;
       $('ofPhone').value = (state.account && state.account.phone) || '';
       $('ofSeller').value = (state.account && state.account.name) || '';
@@ -762,13 +773,31 @@
       $('ofGpsStatus').textContent = state.offerCoords ? `✓ موقع GPS جاهز (${state.offerCoords.lat.toFixed(3)}, ${state.offerCoords.lng.toFixed(3)})` : 'سيُستخدم موقع الولاية أو اضغط لتحديد موقعك الدقيق';
       toggleVehicleFields();
     } else if (id === 'craftModal') {
-      $('crGov').value = state.gov;
-      $('crPhone').value = (state.account && state.account.phone) || '';
-      $('crName').value = (state.account && state.account.name) || '';
+      if (P) P.clearConsentError('craftPrivacyCheck');
+      const editing = state.editingCraftId ? state.crafts.find((x) => x.id === state.editingCraftId) : null;
+      if (editing) {
+        $('craftModalTitle').textContent = '✏️ تعديل بطاقة الحرفي';
+        $('crSubmitBtn').textContent = 'حفظ التعديلات';
+        $('crName').value = editing.name || '';
+        $('crSpec').value = editing.spec || '';
+        $('crGov').value = editing.gov || state.gov;
+        $('crPhone').value = editing.phone || '';
+        $('crArea').value = editing.area || '';
+        $('crNote').value = editing.note || '';
+      } else {
+        state.editingCraftId = null;
+        $('craftModalTitle').textContent = '🛠️ تسجيل حرفي أو ورشة';
+        $('crSubmitBtn').textContent = 'حفظ وإظهار في دليل الحرفيين';
+        $('crGov').value = state.gov;
+        $('crPhone').value = (state.account && state.account.phone) || '';
+        $('crName').value = (state.account && state.account.name) || '';
+        $('crArea').value = '';
+        $('crNote').value = '';
+      }
     }
   }
 
-  function closeModal(id) { $(id).classList.add('hidden'); }
+  function closeModal(id) { $(id).classList.add('hidden'); if (id === 'craftModal') state.editingCraftId = null; }
 
   function updateMapLayerButtons() {
     const styles = {
@@ -785,10 +814,11 @@
   }
 
   function buildShareText(o) {
-    const url = 'https://compstory2-lang.github.io/kouthbayek/';
+    const base = 'https://compstory2-lang.github.io/kouthbayek/';
+    const url = `${base}?offer=${encodeURIComponent(o.id)}`;
     return {
       url,
-      text: `🧺 ${o.title}\n💰 السعر: ${o.price} د.ت — 📍 ${o.gov}\n📞 ${D.cleanPhone(o.phone)}\nعبر تطبيق خوذ بايك: ${url}`
+      text: `🧺 ${o.title}\n💰 السعر: ${o.price} د.ت — 📍 ${o.gov}\n📞 ${D.cleanPhone(o.phone)}\nشاهد العرض مباشرة على خوذ بايك: ${url}`
     };
   }
 
@@ -1098,6 +1128,28 @@
       return;
     }
 
+    const editCraftBtn = e.target.closest('[data-edit-craft]');
+    if (editCraftBtn) {
+      if (!requireActiveAccount()) return;
+      state.editingCraftId = editCraftBtn.dataset.editCraft;
+      openModal('craftModal');
+      return;
+    }
+
+    const delCraftBtn = e.target.closest('[data-delete-craft]');
+    if (delCraftBtn) {
+      if (!requireActiveAccount()) return;
+      const cid = delCraftBtn.dataset.deleteCraft;
+      if (!confirm('هل تريد حذف بطاقة الحرفي هذه نهائياً من الدليل؟')) return;
+      const res = await D.deleteCraft(cid, state.account && state.account.userId);
+      if (!res.ok) return showToast('⚠️ تعذر حذف البطاقة: ' + (res.error || 'حاول مجدداً'));
+      state.crafts = state.crafts.filter((c) => c.id !== cid);
+      D.lsSet(D.STORE_KEYS.crafts, state.crafts);
+      renderAll();
+      showToast('🗑️ تم حذف بطاقة الحرفي بنجاح.');
+      return;
+    }
+
     const soldBtn = e.target.closest('[data-mark-sold]');
     if (soldBtn) {
       const id = soldBtn.dataset.markSold;
@@ -1133,7 +1185,7 @@
 
     const claimBtn = e.target.closest('[data-claim-emerg]');
     if (claimBtn) {
-      if (!requireActiveAccount('⚠️ لاستلام بلاغ طارئ، فعّل حسابك عبر Google ورقم الهاتف أولاً.')) return;
+      if (!requireActiveAccount('⚠️ لاستلام طلب صيانة عاجلة، فعّل حسابك عبر Google ورقم الهاتف أولاً.')) return;
       const id = claimBtn.dataset.claimEmerg;
       const res = await D.claimEmergencyAtomic(id, state.account && state.account.userId);
       if (res.alreadyClaimed) {
@@ -1216,9 +1268,9 @@
 
   $('openEmergencyModalBtn').addEventListener('click', () => openModal('emergencyModal'));
   $('openOfferModalBtn').addEventListener('click', () => openModal('offerModal'));
-  $('openCraftModalBtn').addEventListener('click', () => openModal('craftModal'));
+  $('openCraftModalBtn').addEventListener('click', () => { state.editingCraftId = null; openModal('craftModal'); });
   $('dashAddOfferBtn').addEventListener('click', () => openModal('offerModal'));
-  $('dashAddCraftBtn').addEventListener('click', () => openModal('craftModal'));
+  $('dashAddCraftBtn').addEventListener('click', () => { state.editingCraftId = null; openModal('craftModal'); });
   $('openTermsBtn').addEventListener('click', () => openModal('termsModal'));
   $('openDeleteAccModalBtn').addEventListener('click', () => openModal('deleteAccountModal'));
 
@@ -1257,6 +1309,7 @@
 
   $('phoneActivationForm').addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (P && !P.validateConsent('accPrivacyCheck')) return;
     const ph = D.cleanPhone($('accPhone').value);
     if (!D.isValidTnPhone(ph)) {
       return showToast('⚠️ رقم الهاتف التونسي إجباري ويجب أن يكون 8 أرقام صحيحة.');
@@ -1285,7 +1338,7 @@
     state.account = acc;
     D.lsSet(D.STORE_KEYS.account, acc);
     renderAccount();
-    showToast('🎉 تم تفعيل حسابك بنجاح مع فترة تجربة مجانية لمدة 60 يوماً!');
+    showToast('🎉 تم تفعيل حسابك بنجاح — أهلاً بك في خوذ بايك!');
   });
 
   $('logoutBtn').addEventListener('click', () => doSignOut());
@@ -1320,7 +1373,8 @@
 
   $('emergencyForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!requireActiveAccount('⚠️ لنشر بلاغ طارئ، فعّل حسابك أولاً.')) return;
+    if (!requireActiveAccount('⚠️ لنشر طلب صيانة عاجلة، فعّل حسابك أولاً.')) return;
+    if (P && !P.validateConsent('emPrivacyCheck')) return;
     if (!state.emLocationConfirmed) {
       return showToast('⚠️ تحديد الموقع إجباري: اضغط على زر GPS أو حدّد مكانك على الخريطة.');
     }
@@ -1334,7 +1388,7 @@
 
     const submitBtn = $('emSubmitBtn');
     submitBtn.disabled = true;
-    submitBtn.textContent = '⏳ جاري نشر البلاغ الطارئ...';
+    submitBtn.textContent = '⏳ جاري نشر طلب الصيانة العاجلة...';
     try {
       let imageUrl = '';
       if (state.pendingEmPhoto) {
@@ -1368,16 +1422,17 @@
       state.pendingEmPhoto = null;
       closeModal('emergencyModal');
       renderAll();
-      showToast('🚨 تم نشر البلاغ الطارئ بنجاح! سيظهر لأقرب الحرفيين فوراً.');
+      showToast('⚡ تم نشر طلب الصيانة العاجلة بنجاح! سيظهر لأقرب الحرفيين فوراً.');
     } finally {
       submitBtn.disabled = false;
-      submitBtn.textContent = 'نشر البلاغ الطارئ فوراً';
+      submitBtn.textContent = 'نشر طلب الصيانة العاجلة فوراً';
     }
   });
 
   $('offerForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!requireActiveAccount()) return;
+    if (P && !P.validateConsent('offerPrivacyCheck')) return;
 
     const ph = D.cleanPhone($('ofPhone').value || state.account.phone);
     if (!D.isValidTnPhone(ph)) {
@@ -1456,6 +1511,7 @@
   $('craftForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!requireActiveAccount()) return;
+    if (P && !P.validateConsent('craftPrivacyCheck')) return;
     const ph = D.cleanPhone($('crPhone').value || state.account.phone);
     if (!D.isValidTnPhone(ph)) {
       return showToast('⚠️ يرجى إدخال رقم هاتف تونسي صحيح (8 أرقام).');
@@ -1471,32 +1527,56 @@
     submitBtn.textContent = '⏳ جاري الحفظ...';
     try {
       const g = D.getGovObj($('crGov').value);
-      const newCr = {
-        id: 'cr-' + Date.now(),
-        name,
-        spec: $('crSpec').value,
-        gov: $('crGov').value,
-        area,
-        phone: ph,
-        note,
-        userId: state.account.userId || '',
-        rating: 5.0,
-        reviews: 1,
-        lat: state.userCoords ? state.userCoords.lat : g.lat,
-        lng: state.userCoords ? state.userCoords.lng : g.lng
-      };
-      const res = await D.pushCraft(newCr);
-      if (!res.ok) return showToast('⚠️ تعذر تسجيل الحرفي: ' + (res.error || 'حاول مجدداً'));
-      newCr.id = res.id || newCr.id;
-      state.crafts.unshift(newCr);
-      D.lsSet(D.STORE_KEYS.crafts, state.crafts);
-      e.target.reset();
-      closeModal('craftModal');
-      renderAll();
-      showToast('✓ تمت إضافة بطاقتك في دليل الحرفيين!');
+      if (state.editingCraftId) {
+        const existing = state.crafts.find((x) => x.id === state.editingCraftId);
+        const updatedCr = {
+          ...(existing || {}),
+          id: state.editingCraftId,
+          name,
+          spec: $('crSpec').value,
+          gov: $('crGov').value,
+          area,
+          phone: ph,
+          note,
+          lat: (existing && existing.gov === $('crGov').value && Number.isFinite(Number(existing.lat))) ? existing.lat : g.lat,
+          lng: (existing && existing.gov === $('crGov').value && Number.isFinite(Number(existing.lng))) ? existing.lng : g.lng
+        };
+        const res = await D.updateCraft(updatedCr, state.account.userId);
+        if (!res.ok) return showToast('⚠️ تعذر تعديل البطاقة: ' + (res.error || 'حاول مجدداً'));
+        state.crafts = state.crafts.map((c) => c.id === updatedCr.id ? updatedCr : c);
+        D.lsSet(D.STORE_KEYS.crafts, state.crafts);
+        e.target.reset();
+        closeModal('craftModal');
+        renderAll();
+        showToast('✓ تم تحديث بطاقة الحرفي بنجاح!');
+      } else {
+        const newCr = {
+          id: 'cr-' + Date.now(),
+          name,
+          spec: $('crSpec').value,
+          gov: $('crGov').value,
+          area,
+          phone: ph,
+          note,
+          userId: state.account.userId || '',
+          rating: 5.0,
+          reviews: 1,
+          lat: state.userCoords ? state.userCoords.lat : g.lat,
+          lng: state.userCoords ? state.userCoords.lng : g.lng
+        };
+        const res = await D.pushCraft(newCr);
+        if (!res.ok) return showToast('⚠️ تعذر تسجيل الحرفي: ' + (res.error || 'حاول مجدداً'));
+        newCr.id = res.id || newCr.id;
+        state.crafts.unshift(newCr);
+        D.lsSet(D.STORE_KEYS.crafts, state.crafts);
+        e.target.reset();
+        closeModal('craftModal');
+        renderAll();
+        showToast('✓ تمت إضافة بطاقتك في دليل الحرفيين!');
+      }
     } finally {
       submitBtn.disabled = false;
-      submitBtn.textContent = 'حفظ وإظهار في دليل الحرفيين';
+      submitBtn.textContent = state.editingCraftId ? 'حفظ التعديلات' : 'حفظ وإظهار في دليل الحرفيين';
     }
   });
 
@@ -1515,6 +1595,12 @@
 
   async function init() {
     populateSelects();
+    if (P) {
+      P.renderConsentField('accPrivacySlot', 'accPrivacyCheck', 'account');
+      P.renderConsentField('offerPrivacySlot', 'offerPrivacyCheck', 'offer');
+      P.renderConsentField('craftPrivacySlot', 'craftPrivacyCheck', 'craft');
+      P.renderConsentField('emPrivacySlot', 'emPrivacyCheck', 'emergency');
+    }
     renderAll();
     if (D.isSupabaseConnected()) {
       $('syncBadge').textContent = '🟢 متصل بـ Supabase';
@@ -1534,6 +1620,40 @@
       });
       if (synced || authUser) renderAll();
     }
+    handleSharedOfferLink();
+  }
+
+  async function handleSharedOfferLink() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const oid = params.get('offer');
+      if (!oid) return;
+      state.sharedOfferId = oid;
+      let target = state.offers.find((o) => String(o.id) === String(oid));
+      if (!target && state.radius !== 'all') {
+        state.radius = 'all';
+        $('radiusSelect').value = 'all';
+        if (D.isSupabaseConnected()) await D.syncFromSupabase(state, true);
+        target = state.offers.find((o) => String(o.id) === String(oid));
+      }
+      if (!target) {
+        showToast('ℹ️ هذا العرض منتهي الصلاحية أو تم بيعه.');
+        return;
+      }
+      state.marketCat = 'all';
+      state.showFavsOnly = false;
+      state.marketSearch = '';
+      state.marketLimit = Math.max(state.marketLimit, state.offers.length);
+      switchTab('market');
+      renderAll();
+      setTimeout(() => {
+        const el = document.getElementById('offer-card-' + target.id);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          showToast('🧺 تم فتح العرض المشارَك مباشرة!');
+        }
+      }, 150);
+    } catch (_) {}
   }
 
   init();
