@@ -1,4 +1,4 @@
-// خوذ بايك — طبقة البيانات المحسّنة لتحمّل 10,000+ مشترك (v1.3-TN Scale)
+// خوذ بايك — طبقة البيانات والأمان والرقابة الذاتية وRealtime (v1.4-TN)
 window.KB_DATA = (() => {
   'use strict';
 
@@ -9,7 +9,8 @@ window.KB_DATA = (() => {
     crafts: 'kb_v11_crafts',
     emergencies: 'kb_v11_emergencies',
     account: 'kb_v11_account',
-    claimed: 'kb_v11_claimed'
+    claimed: 'kb_v11_claimed',
+    favCats: 'kb_v14_fav_cats'
   };
 
   let sbClient = null;
@@ -50,9 +51,45 @@ window.KB_DATA = (() => {
       .replace(/'/g, '&#39;');
   }
 
+  // تطبيع النص العربي: إزالة التشكيل والمد وتوحيد الألف والتاء والياء لبحث دقيق
+  function normalizeAr(str) {
+    return String(str == null ? '' : str)
+      .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
+      .replace(/[أإآ]/g, 'ا')
+      .replace(/ة/g, 'ه')
+      .replace(/ى/g, 'ي')
+      .toLowerCase()
+      .trim();
+  }
+
+  // فحص الرقابة الذاتية: منع الخمور والممنوعات والألفاظ السوقية وملاءمة النص
+  function checkContentModeration(text) {
+    const norm = normalizeAr(text);
+    if (!norm || norm.length < 3) {
+      return { ok: false, reason: '⚠️ يرجى كتابة وصف واضح ومناسب قبل النشر.' };
+    }
+    const rules = C.MODERATION_RULES || {};
+    const groups = [
+      { list: rules.alcohol || [], msg: '🚫 يُمنع نشر إعلانات الخمور والمشروبات الكحولية على «خوذ بايك».' },
+      { list: rules.contraband || [], msg: '🚫 يُمنع نشر الممنوعات أو المواد غير القانونية على «خوذ بايك».' },
+      { list: rules.profanity || [], msg: '🚫 يرجى احترام الآداب العامة؛ تم رصد ألفاظ غير لائقة في النص.' }
+    ];
+    for (const g of groups) {
+      for (const word of g.list) {
+        const w = normalizeAr(word);
+        if (w && norm.includes(w)) {
+          return { ok: false, reason: g.msg };
+        }
+      }
+    }
+    return { ok: true, reason: '' };
+  }
+
   function cleanPhone(p) {
-    const digits = String(p || '').replace(/\D/g, '');
-    return digits.length >= 8 ? digits.slice(-8) : digits;
+    let digits = String(p || '').replace(/\D/g, '');
+    if (digits.startsWith('00216')) digits = digits.slice(5);
+    else if (digits.startsWith('216') && digits.length >= 11) digits = digits.slice(3);
+    return digits.length > 8 ? digits.slice(-8) : digits;
   }
 
   function isValidTnPhone(p) {
@@ -109,7 +146,7 @@ window.KB_DATA = (() => {
     return C.CRAFT_CATS.find((c) => c.id === id) || C.CRAFT_CATS[0];
   }
 
-  // ==================== ضغط فائق للصور (< 55 KB) لتقليل Egress للنصف ====================
+  // ==================== ضغط فائق للصور (< 55 KB) بدون حفظ base64 في القاعدة ====================
   function compressImageFile(file, maxDim = 680, maxBytes = 55000) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -143,21 +180,25 @@ window.KB_DATA = (() => {
     });
   }
 
-  async function uploadOfferImage(blob, dataUrl, userId) {
-    if (!sbClient || !blob) return dataUrl || '';
+  async function uploadOfferImage(blob, userId, prefix = 'of') {
+    if (!sbClient || !blob || !userId) {
+      return { ok: false, url: '', error: 'يجب تسجيل الدخول لرفع الصور' };
+    }
     try {
-      const safeUid = String(userId || 'anon').replace(/[^a-zA-Z0-9_-]/g, '');
-      const path = `${safeUid}/${Date.now()}_${Math.floor(Math.random() * 9999)}.jpg`;
+      const safeUid = String(userId).replace(/[^a-zA-Z0-9_-]/g, '');
+      const safePre = String(prefix || 'of').replace(/[^a-zA-Z0-9_-]/g, '');
+      const path = `${safeUid}/${safePre}_${Date.now()}_${Math.floor(Math.random() * 9999)}.jpg`;
       const { error } = await sbClient.storage.from(C.STORAGE_BUCKET).upload(path, blob, {
         contentType: 'image/jpeg',
-        cacheControl: '604800', // كاش متصفح 7 أيام لتقليل استهلاك Egress
+        cacheControl: '604800',
         upsert: false
       });
-      if (error) return dataUrl || '';
+      if (error) return { ok: false, url: '', error: error.message };
       const { data } = sbClient.storage.from(C.STORAGE_BUCKET).getPublicUrl(path);
-      return (data && data.publicUrl) ? data.publicUrl : (dataUrl || '');
-    } catch (_) {
-      return dataUrl || '';
+      if (!data || !data.publicUrl) return { ok: false, url: '', error: 'تعذر توليد رابط الصورة' };
+      return { ok: true, url: data.publicUrl, error: '' };
+    } catch (err) {
+      return { ok: false, url: '', error: (err && err.message) || 'تعذر رفع الصورة' };
     }
   }
 
@@ -167,10 +208,11 @@ window.KB_DATA = (() => {
   if (isCapNative() && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
     window.Capacitor.Plugins.App.addListener('appUrlOpen', async (ev) => {
       const u = (ev && ev.url) || '';
-      if (!u.startsWith('tn.kouthbayek.app://callback')) return;
-      try { if (window.Capacitor.Plugins.Browser) await window.Capacitor.Plugins.Browser.close(); } catch (_) {}
       try {
-        const code = new URL(u).searchParams.get('code');
+        const parsed = new URL(u);
+        if (parsed.protocol !== 'tn.kouthbayek.app:' || parsed.host !== 'callback') return;
+        try { if (window.Capacitor.Plugins.Browser) await window.Capacitor.Plugins.Browser.close(); } catch (_) {}
+        const code = parsed.searchParams.get('code');
         if (!code || !sbClient) return;
         const { error } = await sbClient.auth.exchangeCodeForSession(code);
         if (!error) window.location.reload();
@@ -236,16 +278,21 @@ window.KB_DATA = (() => {
 
   async function saveCloudAccount(acc) {
     if (!sbClient || !acc.userId) return { ok: false, error: 'غير متصل' };
-    const { error } = await sbClient.from('kb_accounts').upsert({
+    // لا نرسل trial_ends_at من العميل — الخادم يفرض الـ 60 يوماً تلقائياً
+    const { data, error } = await sbClient.from('kb_accounts').upsert({
       user_id: acc.userId,
       email: acc.email || '',
       display_name: acc.name,
       role: acc.role,
       phone: acc.phone,
-      governorate: acc.gov,
-      trial_ends_at: new Date(acc.trialEndsAt).toISOString()
-    }, { onConflict: 'user_id' });
-    return { ok: !error, error: error ? error.message : '' };
+      governorate: acc.gov
+    }, { onConflict: 'user_id' }).select('created_at,trial_ends_at').maybeSingle();
+    return {
+      ok: !error,
+      error: error ? error.message : '',
+      createdAt: data && data.created_at ? Date.parse(data.created_at) : acc.createdAt,
+      trialEndsAt: data && data.trial_ends_at ? Date.parse(data.trial_ends_at) : acc.trialEndsAt
+    };
   }
 
   async function signOutGoogle() {
@@ -258,6 +305,7 @@ window.KB_DATA = (() => {
       await Promise.allSettled([
         sbClient.from('kb_offers').delete().eq('user_id', userId),
         sbClient.from('kb_craftsmen').delete().eq('user_id', userId),
+        sbClient.from('kb_emergencies').delete().eq('user_id', userId),
         sbClient.from('kb_accounts').delete().eq('user_id', userId)
       ]);
       try { await sbClient.auth.signOut(); } catch (_) {}
@@ -266,39 +314,39 @@ window.KB_DATA = (() => {
     lsRemove(STORE_KEYS.claimed);
   }
 
-  // ==================== جلب ذكي مفلتر حسب الولاية لتحمّل 10,000+ مشترك ====================
+  // ==================== جلب ذكي مفلتر حسب الولاية ====================
   const syncCache = { key: '', at: 0 };
 
   async function syncFromSupabase(state, force = false) {
     if (!sbClient) return false;
-    const scopeKey = state.radius === 'gov' ? `gov:${state.gov}` : 'all';
-    if (!force && syncCache.key === scopeKey && (Date.now() - syncCache.at) < 120000) {
-      return false; // كاش مؤقت لدقيقتين لتقليل استهلاك قاعدة البيانات وEgress
+    const scopeKey = state.radius === 'gov' ? `gov:${state.gov}` : `r:${state.radius}`;
+    if (!force && syncCache.key === scopeKey && (Date.now() - syncCache.at) < 90000) {
+      return false;
     }
     try {
       const nowIso = new Date().toISOString();
       const since24h = new Date(Date.now() - 24 * C.HR).toISOString();
+      const offerLimit = state.radius === 'gov' ? 80 : 150;
 
       let ofQ = sbClient.from('kb_offers')
         .select('id,title,price,category,governorate,seller_name,phone,description,image_url,status,user_id,lat,lng,created_at,expires_at')
+        .eq('status', 'active')
         .gte('expires_at', nowIso)
-        .neq('status', 'sold')
         .order('created_at', { ascending: false })
-        .limit(60);
+        .limit(offerLimit);
 
       let crQ = sbClient.from('kb_craftsmen')
         .select('id,name,specialty,governorate,area,phone,description,rating,reviews_count,user_id,lat,lng')
         .order('rating', { ascending: false })
-        .limit(80);
+        .limit(100);
 
       let emQ = sbClient.from('kb_emergencies')
-        .select('id,emergency_type,governorate,description,phone,lat,lng,created_at,status,claimed_by')
-        .eq('status', 'open')
+        .select('id,emergency_type,governorate,description,phone,image_url,lat,lng,created_at,status,user_id,claimed_by,craftsman_status')
+        .in('status', ['open', 'claimed'])
         .gte('created_at', since24h)
         .order('created_at', { ascending: false })
-        .limit(40);
+        .limit(60);
 
-      // عند التصفح داخل الولاية (90% من المستخدمين) نجلب بيانات الولاية فقط لتوفير 95% من البيانات
       if (state.radius === 'gov' && state.gov) {
         ofQ = ofQ.eq('governorate', state.gov);
         crQ = crQ.eq('governorate', state.gov);
@@ -309,31 +357,36 @@ window.KB_DATA = (() => {
       syncCache.key = scopeKey;
       syncCache.at = Date.now();
 
-      if (Array.isArray(ofRes.data) && ofRes.data.length) {
+      // نستبدل القائمة حتى لو كانت فارغة لتفادي بقاء بيانات قديمة محلياً
+      if (!ofRes.error && Array.isArray(ofRes.data)) {
         state.offers = ofRes.data.map((r) => ({
           id: r.id, title: r.title, price: Number(r.price), cat: r.category,
           gov: r.governorate, seller: r.seller_name, phone: r.phone,
           desc: r.description || '', imageUrl: r.image_url || '',
           status: r.status || 'active', userId: r.user_id || '',
-          lat: r.lat, lng: r.lng,
+          lat: Number(r.lat), lng: Number(r.lng),
           createdAt: Date.parse(r.created_at) || Date.now(),
           expiresAt: Date.parse(r.expires_at) || (Date.now() + C.OFFER_TTL_HOURS * C.HR)
         }));
       }
-      if (Array.isArray(crRes.data) && crRes.data.length) {
+      if (!crRes.error && Array.isArray(crRes.data)) {
         state.crafts = crRes.data.map((r) => ({
           id: r.id, name: r.name, spec: r.specialty, gov: r.governorate,
           area: r.area || '', rating: Number(r.rating || 5), reviews: Number(r.reviews_count || 1),
           phone: r.phone, note: r.description || '', userId: r.user_id || '',
-          lat: r.lat, lng: r.lng
+          lat: Number(r.lat), lng: Number(r.lng)
         }));
       }
-      if (Array.isArray(emRes.data) && emRes.data.length) {
+      if (!emRes.error && Array.isArray(emRes.data)) {
         state.emergencies = emRes.data.map((r) => ({
           id: r.id, type: r.emergency_type, gov: r.governorate, desc: r.description,
-          phone: r.phone || '', lat: r.lat, lng: r.lng,
+          phone: r.phone || '', imageUrl: r.image_url || '',
+          lat: Number(r.lat), lng: Number(r.lng),
           createdAt: Date.parse(r.created_at) || Date.now(),
-          status: r.status || 'open', claimedBy: r.claimed_by || ''
+          status: r.status || 'open',
+          userId: r.user_id || '',
+          claimedBy: r.claimed_by || '',
+          craftsmanStatus: r.craftsman_status || 'pending'
         }));
       }
       return true;
@@ -343,7 +396,7 @@ window.KB_DATA = (() => {
   }
 
   async function pushOffer(o) {
-    if (!sbClient) return { ok: true, id: o.id };
+    if (!sbClient) return { ok: false, id: o.id, error: 'غير متصل بالخادم' };
     try {
       const { data, error } = await sbClient.from('kb_offers').insert({
         title: o.title, price: o.price, category: o.cat, governorate: o.gov,
@@ -354,73 +407,110 @@ window.KB_DATA = (() => {
       }).select('id').single();
       syncCache.at = 0;
       return { ok: !error, id: (data && data.id) || o.id, error: error ? error.message : '' };
-    } catch (_) {
-      return { ok: false, id: o.id, error: '' };
+    } catch (err) {
+      return { ok: false, id: o.id, error: (err && err.message) || 'خطأ في الاتصال' };
     }
   }
 
   async function markOfferSold(offerId, userId) {
-    if (!sbClient || String(offerId).startsWith('of-')) return { ok: true };
+    if (!sbClient || !userId) return { ok: false, error: 'يجب تسجيل الدخول' };
     try {
-      let q = sbClient.from('kb_offers').update({ status: 'sold' }).eq('id', offerId);
-      if (userId) q = q.eq('user_id', userId);
-      const { error } = await q;
+      const { error } = await sbClient.from('kb_offers')
+        .update({ status: 'sold' })
+        .eq('id', offerId)
+        .eq('user_id', userId);
       syncCache.at = 0;
-      return { ok: !error };
-    } catch (_) {
-      return { ok: false };
+      return { ok: !error, error: error ? error.message : '' };
+    } catch (err) {
+      return { ok: false, error: (err && err.message) || 'تعذر التحديث' };
     }
   }
 
   async function pushCraft(c) {
-    if (!sbClient) return { ok: true };
+    if (!sbClient) return { ok: false, error: 'غير متصل بالخادم' };
     try {
-      const { error } = await sbClient.from('kb_craftsmen').insert({
+      // لا نرسل rating ولا reviews_count — الخادم يضبطهما تلقائياً
+      const { data, error } = await sbClient.from('kb_craftsmen').insert({
         name: c.name, specialty: c.spec, governorate: c.gov, area: c.area,
-        phone: c.phone, description: c.note, rating: c.rating, reviews_count: c.reviews,
+        phone: c.phone, description: c.note,
         user_id: c.userId || null, lat: c.lat, lng: c.lng
-      });
+      }).select('id').single();
       syncCache.at = 0;
-      return { ok: !error };
-    } catch (_) {
-      return { ok: false };
+      return { ok: !error, id: (data && data.id) || c.id, error: error ? error.message : '' };
+    } catch (err) {
+      return { ok: false, error: (err && err.message) || 'خطأ في الاتصال' };
     }
   }
 
   async function pushEmergency(e) {
-    if (!sbClient) return { ok: true, id: e.id };
+    if (!sbClient) return { ok: false, id: e.id, error: 'غير متصل بالخادم' };
     try {
       const { data, error } = await sbClient.from('kb_emergencies').insert({
         emergency_type: e.type, governorate: e.gov, description: e.desc,
-        phone: e.phone || null, lat: e.lat, lng: e.lng, status: 'open'
+        phone: e.phone || null, image_url: e.imageUrl || null,
+        lat: e.lat, lng: e.lng, status: 'open',
+        user_id: e.userId || null, craftsman_status: 'pending'
       }).select('id').single();
       syncCache.at = 0;
-      return { ok: !error, id: (data && data.id) || e.id };
-    } catch (_) {
-      return { ok: false, id: e.id };
+      return { ok: !error, id: (data && data.id) || e.id, error: error ? error.message : '' };
+    } catch (err) {
+      return { ok: false, id: e.id, error: (err && err.message) || 'خطأ في الاتصال' };
     }
   }
 
   async function claimEmergencyAtomic(emergId, userId) {
-    if (!sbClient || String(emergId).startsWith('em-')) return { ok: true };
+    if (!sbClient || !userId) return { ok: false, alreadyClaimed: false, error: 'يجب تسجيل الدخول' };
     try {
       const { data, error } = await sbClient
         .from('kb_emergencies')
-        .update({ status: 'claimed', claimed_by: userId || null, claimed_at: new Date().toISOString() })
+        .update({ status: 'claimed', claimed_by: userId, claimed_at: new Date().toISOString(), craftsman_status: 'in_progress' })
         .eq('id', emergId)
         .eq('status', 'open')
         .select('id');
       syncCache.at = 0;
-      if (error) return { ok: false, alreadyClaimed: false };
-      if (!data || !data.length) return { ok: false, alreadyClaimed: true };
-      return { ok: true };
-    } catch (_) {
-      return { ok: false, alreadyClaimed: false };
+      if (error) return { ok: false, alreadyClaimed: false, error: error.message };
+      if (!data || !data.length) return { ok: false, alreadyClaimed: true, error: '' };
+      return { ok: true, alreadyClaimed: false, error: '' };
+    } catch (err) {
+      return { ok: false, alreadyClaimed: false, error: (err && err.message) || 'خطأ في الاتصال' };
+    }
+  }
+
+  async function markEmergencyCraftsmanStatus(emergId, userId, outcome) {
+    if (!sbClient || !userId) return { ok: false, error: 'يجب تسجيل الدخول' };
+    try {
+      const patch = outcome === 'completed'
+        ? { craftsman_status: 'completed' }
+        : { status: 'open', claimed_by: null, claimed_at: null, craftsman_status: 'pending' };
+      const { error } = await sbClient
+        .from('kb_emergencies')
+        .update(patch)
+        .eq('id', emergId)
+        .eq('claimed_by', userId);
+      syncCache.at = 0;
+      return { ok: !error, error: error ? error.message : '' };
+    } catch (err) {
+      return { ok: false, error: (err && err.message) || 'تعذر التحديث' };
+    }
+  }
+
+  async function confirmEmergencyOwner(emergId, userId) {
+    if (!sbClient || !userId) return { ok: false, error: 'يجب تسجيل الدخول' };
+    try {
+      const { error } = await sbClient
+        .from('kb_emergencies')
+        .update({ status: 'resolved', resolved_at: new Date().toISOString() })
+        .eq('id', emergId)
+        .eq('user_id', userId);
+      syncCache.at = 0;
+      return { ok: !error, error: error ? error.message : '' };
+    } catch (err) {
+      return { ok: false, error: (err && err.message) || 'تعذر تأكيد التنفيذ' };
     }
   }
 
   async function submitReport(targetType, targetId, reason, reporterId) {
-    if (!sbClient) return { ok: true };
+    if (!sbClient) return { ok: false, error: 'غير متصل بالخادم' };
     try {
       const { error } = await sbClient.from('kb_reports').insert({
         target_type: targetType,
@@ -428,13 +518,29 @@ window.KB_DATA = (() => {
         reason: String(reason || '').slice(0, 300),
         reporter_user_id: reporterId || null
       });
-      return { ok: !error };
-    } catch (_) {
-      return { ok: false };
+      return { ok: !error, error: error ? error.message : '' };
+    } catch (err) {
+      return { ok: false, error: (err && err.message) || 'تعذر إرسال البلاغ' };
     }
   }
 
-  if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
+  // اشتراك Realtime للطوارئ لتحديث القائمة فورياً داخل التطبيق
+  let realtimeChannel = null;
+  function subscribeEmergencies(onChange) {
+    if (!sbClient || realtimeChannel) return;
+    try {
+      realtimeChannel = sbClient
+        .channel('kb_emergencies_live')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'kb_emergencies' }, () => {
+          syncCache.at = 0;
+          if (typeof onChange === 'function') onChange();
+        })
+        .subscribe();
+    } catch (_) {}
+  }
+
+  // تسجيل Service Worker على الويب فقط (وليس داخل Capacitor APK)
+  if (!isCapNative() && 'serviceWorker' in navigator && window.location.protocol !== 'file:') {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('./sw.js').catch(() => {});
     });
@@ -444,11 +550,13 @@ window.KB_DATA = (() => {
     STORE_KEYS,
     isSupabaseConnected: () => Boolean(sbClient),
     lsGet, lsSet, lsRemove,
-    escHtml, cleanPhone, isValidTnPhone,
+    escHtml, normalizeAr, checkContentModeration, cleanPhone, isValidTnPhone,
     haversineKm, getGovObj, detectNearestGov,
     formatRemaining, formatAgo, getMarketCatInfo, getCraftCatInfo,
     compressImageFile, uploadOfferImage,
     signInWithGoogle, getAuthUser, fetchCloudAccount, saveCloudAccount, signOutGoogle, deleteUserAccountAndData,
-    syncFromSupabase, pushOffer, markOfferSold, pushCraft, pushEmergency, claimEmergencyAtomic, submitReport
+    syncFromSupabase, pushOffer, markOfferSold, pushCraft,
+    pushEmergency, claimEmergencyAtomic, markEmergencyCraftsmanStatus, confirmEmergencyOwner,
+    submitReport, subscribeEmergencies
   };
 })();

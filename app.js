@@ -1,4 +1,4 @@
-// خوذ بايك — منطق الواجهة والأحداث والشبكة الثنائية للفئات (v1.2-TN)
+// خوذ بايك — منطق الواجهة والأحداث والمفضّلة والفلاتر والطوارئ المتقدمة (v1.4-TN)
 (() => {
   'use strict';
 
@@ -8,6 +8,7 @@
   const $ = (id) => document.getElementById(id);
 
   const savedPrefs = D.lsGet(D.STORE_KEYS.prefs, { gov: 'قابس', radius: 'gov' });
+  const defaultFavs = D.lsGet(D.STORE_KEYS.favCats, ['produce', 'meat', 'fish', 'dairy']);
   const state = {
     activeTab: 'market',
     gov: savedPrefs.gov || 'قابس',
@@ -16,19 +17,30 @@
     marketSearch: '',
     marketCat: 'all',
     showMarketCatGrid: false,
+    showFavsOnly: false,
+    showFavsPanel: false,
+    favCats: Array.isArray(defaultFavs) ? defaultFavs : [],
+    showMarketFilters: false,
+    marketSort: 'nearest',
+    minPrice: '',
+    maxPrice: '',
+    vehBrand: '',
+    vehYear: '',
+    vehKm: '',
     marketLimit: 15,
     craftSearch: '',
     craftGroup: 'all',
     craftCat: 'all',
     emergCat: 'all',
     mapLayers: { market: true, crafts: true, emergency: true },
-    offers: D.lsGet(D.STORE_KEYS.offers, null) || C.SEED_OFFERS.slice(),
-    crafts: D.lsGet(D.STORE_KEYS.crafts, null) || C.SEED_CRAFTS.slice(),
-    emergencies: D.lsGet(D.STORE_KEYS.emergencies, null) || C.SEED_EMERGENCIES.slice(),
-    claimedEmergencies: D.lsGet(D.STORE_KEYS.claimed, []),
+    offers: D.lsGet(D.STORE_KEYS.offers, []),
+    crafts: D.lsGet(D.STORE_KEYS.crafts, []),
+    emergencies: D.lsGet(D.STORE_KEYS.emergencies, []),
     authUser: null,
     account: D.lsGet(D.STORE_KEYS.account, null),
     pickerCoords: { lat: 33.8815, lng: 10.0982 },
+    emLocationConfirmed: false,
+    pendingEmPhoto: null,
     offerCoords: null,
     pendingOfferPhoto: null,
     reportTarget: null
@@ -40,7 +52,7 @@
     el.textContent = msg;
     el.classList.remove('hidden');
     if (toastTimer) clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => el.classList.add('hidden'), 3400);
+    toastTimer = setTimeout(() => el.classList.add('hidden'), 3600);
   }
 
   function isAccountActive() {
@@ -61,23 +73,39 @@
   }
 
   function distanceOf(item) {
-    if (!item || !item.lat || !item.lng) return 99999;
+    if (!item || !Number.isFinite(Number(item.lat)) || !Number.isFinite(Number(item.lng))) return 99999;
     const ref = getReferencePoint();
-    return D.haversineKm(ref.lat, ref.lng, item.lat, item.lng);
+    return D.haversineKm(ref.lat, ref.lng, Number(item.lat), Number(item.lng));
   }
 
   function matchesGeo(item) {
     if (state.radius === 'all') return true;
     if (state.radius === 'gov') return item.gov === state.gov;
     const maxKm = Number(state.radius);
-    if (!maxKm || !item.lat || !item.lng) return item.gov === state.gov;
+    if (!maxKm || !Number.isFinite(Number(item.lat)) || !Number.isFinite(Number(item.lng))) return item.gov === state.gov;
     return distanceOf(item) <= maxKm;
   }
 
   function getDistBadge(item) {
-    if (!item.lat || !item.lng) return '';
+    if (!item || !Number.isFinite(Number(item.lat)) || !Number.isFinite(Number(item.lng))) return '';
     const km = distanceOf(item);
     return km < 1 ? 'أقل من 1 كم' : `${km.toFixed(1)} كم`;
+  }
+
+  function updateEmDistancePreview() {
+    const ref = getReferencePoint();
+    const km = D.haversineKm(ref.lat, ref.lng, state.pickerCoords.lat, state.pickerCoords.lng);
+    const distTxt = km < 1 ? 'أقل من 1 كم' : `${km.toFixed(1)} كم`;
+    $('emDistPreview').textContent = `📏 المسافة: ${distTxt}`;
+    $('emCoordsTxt').textContent = `${state.pickerCoords.lat.toFixed(4)}, ${state.pickerCoords.lng.toFixed(4)}`;
+    const badge = $('emLocBadge');
+    if (state.emLocationConfirmed) {
+      badge.textContent = '✓ تم تأكيد موقع البلاغ بنجاح';
+      badge.className = 'text-emerald-700 font-black';
+    } else {
+      badge.textContent = '⚠️ اضغط على الخريطة أو زر GPS لتأكيد الموقع';
+      badge.className = 'text-rose-700 font-bold';
+    }
   }
 
   function populateSelects() {
@@ -94,20 +122,44 @@
       .map((c) => `<option value="${D.escHtml(c.id)}">${c.icon} ${D.escHtml(c.label)}</option>`).join('');
   }
 
-  // ==================== 2-COLUMN CATEGORY TILE GRIDS (MATCHES SCREENSHOTS) ====================
+  // ==================== FAVORITES PANEL (المفضّلة) ====================
+  function renderFavCatsPanel() {
+    $('favCatsCount').textContent = String(state.favCats.length);
+    const btn = $('marketFavsBtn');
+    if (state.showFavsOnly) {
+      btn.className = 'rounded-full bg-amber-500 px-3 py-1 text-xs font-extrabold text-white shadow-sm';
+    } else {
+      btn.className = 'rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-extrabold text-amber-950';
+    }
+    $('favCatsPanel').classList.toggle('hidden', !state.showFavsPanel);
+    $('favCatsChips').innerHTML = C.MARKET_CATS.filter((c) => c.id !== 'all').map((c) => {
+      const active = state.favCats.includes(c.id);
+      const cls = active
+        ? 'bg-[#0D6857] text-white border-[#0D6857]'
+        : 'bg-white text-[#132A23] border-amber-200';
+      return `
+        <button type="button" data-toggle-fav-cat="${D.escHtml(c.id)}" class="rounded-full border px-2.5 py-1 text-[11px] font-extrabold transition ${cls}">
+          ${active ? '⭐' : '+'} ${c.icon} ${D.escHtml(c.label)}
+        </button>
+      `;
+    }).join('');
+  }
+
+  // ==================== 2-COLUMN CATEGORY TILE GRIDS ====================
   function renderCategoryBars() {
-    // 1. Market 2-Column Tiles with live offer counts
-    const geoOffers = state.offers.filter((o) => o.status !== 'sold' && (!o.expiresAt || o.expiresAt > Date.now()) && matchesGeo(o));
+    const geoOffers = state.offers.filter((o) => o.status === 'active' && (!o.expiresAt || o.expiresAt > Date.now()) && matchesGeo(o));
     $('marketCatBar').innerHTML = C.MARKET_CATS.filter((c) => c.id !== 'all').map((c) => {
       const cnt = geoOffers.filter((o) => o.cat === c.id).length;
       const isSelected = state.marketCat === c.id;
+      const isFav = state.favCats.includes(c.id);
       const hasAny = cnt > 0;
       const tileCls = isSelected
         ? 'border-2 border-[#0D6857] bg-[#E8F6F2]'
         : (hasAny ? 'border border-amber-300 bg-amber-50/40' : 'border border-[#E4EAE8] bg-white');
       const pillCls = hasAny ? 'bg-amber-100 text-amber-900' : 'bg-slate-100 text-slate-500';
       return `
-        <button type="button" data-market-cat="${D.escHtml(c.id)}" class="kb-cat-tile rounded-3xl ${tileCls} p-4 text-center shadow-sm flex flex-col items-center justify-center gap-2">
+        <button type="button" data-market-cat="${D.escHtml(c.id)}" class="kb-cat-tile relative rounded-3xl ${tileCls} p-4 text-center shadow-sm flex flex-col items-center justify-center gap-2">
+          ${isFav ? '<span class="absolute top-2.5 left-2.5 text-xs" title="في المفضلة">⭐</span>' : ''}
           <span class="text-3xl leading-none">${c.icon}</span>
           <span class="text-xs sm:text-sm font-black text-[#132A23] leading-snug">${D.escHtml(c.label)}</span>
           <span class="rounded-full ${pillCls} px-3 py-0.5 text-[11px] font-extrabold">${cnt} عرض اليوم</span>
@@ -115,7 +167,6 @@
       `;
     }).join('');
 
-    // 2. Crafts Group Pills
     const totalSpecs = C.CRAFT_CATS.filter((c) => c.id !== 'all').length;
     $('craftGroupBar').innerHTML = C.CRAFT_GROUPS.map((g) => {
       const lbl = g.id === 'all' ? `${g.label} (${totalSpecs})` : `${g.icon} ${g.label}`;
@@ -126,7 +177,6 @@
       `;
     }).join('');
 
-    // 3. Crafts 2-Column Specialty Tiles with live craftsman counts
     const geoCrafts = state.crafts.filter((c) => matchesGeo(c));
     const visibleSpecs = C.CRAFT_CATS.filter((c) => c.id !== 'all' && (state.craftGroup === 'all' || c.group === state.craftGroup));
     $('craftCatBar').innerHTML = visibleSpecs.map((c) => {
@@ -141,12 +191,11 @@
         <button type="button" data-craft-cat="${D.escHtml(c.id)}" class="kb-cat-tile rounded-3xl ${tileCls} p-4 text-center shadow-sm flex flex-col items-center justify-center gap-2">
           <span class="text-3xl leading-none">${c.icon}</span>
           <span class="text-xs sm:text-sm font-black text-[#132A23] leading-snug">${D.escHtml(c.label)}</span>
-          <span class="rounded-full ${pillCls} px-3 py-0.5 text-[11px] font-extrabold">${cnt} عرض اليوم</span>
+          <span class="rounded-full ${pillCls} px-3 py-0.5 text-[11px] font-extrabold">${cnt} حرفي</span>
         </button>
       `;
     }).join('');
 
-    // 4. Emergency Filter Pills
     $('emergCatBar').innerHTML = C.EMERG_CATS.map((c) => `
       <button type="button" data-emerg-cat="${D.escHtml(c.id)}" class="kb-pill kb-pill-red ${state.emergCat === c.id ? 'active' : 'bg-white text-[#132A23] border-slate-200'} rounded-full border px-3.5 py-1.5 text-xs font-extrabold">
         ${c.icon} ${D.escHtml(c.label)}
@@ -154,35 +203,71 @@
     `).join('');
   }
 
-  // ==================== MARKET (SORTED NEAREST-FIRST + MAGAZINE CARDS) ====================
+  // ==================== MARKET (SEARCH + FAVORITES + FILTERS + VEHICLES) ====================
   function getFilteredOffers() {
-    const q = state.marketSearch.trim().toLowerCase();
+    const q = D.normalizeAr(state.marketSearch);
+    const minP = state.minPrice !== '' ? Number(state.minPrice) : null;
+    const maxP = state.maxPrice !== '' ? Number(state.maxPrice) : null;
+    const vBrand = D.normalizeAr(state.vehBrand);
+    const vYear = state.vehYear !== '' ? Number(state.vehYear) : null;
+    const vKm = state.vehKm !== '' ? Number(state.vehKm) : null;
+
     return state.offers.filter((o) => {
-      if (o.status === 'sold') return false;
+      if (o.status !== 'active') return false;
       if (o.expiresAt && o.expiresAt <= Date.now()) return false;
       if (!matchesGeo(o)) return false;
       if (state.marketCat !== 'all' && o.cat !== state.marketCat) return false;
+      if (state.showFavsOnly && state.favCats.length && !state.favCats.includes(o.cat)) return false;
+      if (minP !== null && Number(o.price) < minP) return false;
+      if (maxP !== null && Number(o.price) > maxP) return false;
       if (q) {
-        const hay = `${o.title} ${o.desc || ''} ${o.seller} ${o.gov} ${D.getMarketCatInfo(o.cat).label}`.toLowerCase();
+        const hay = D.normalizeAr(`${o.title} ${o.desc || ''} ${o.seller} ${o.gov} ${D.getMarketCatInfo(o.cat).label}`);
         if (!hay.includes(q)) return false;
       }
+      if (state.marketCat === 'vehicles' && (vBrand || vYear !== null || vKm !== null)) {
+        const vText = D.normalizeAr(`${o.title} ${o.desc || ''}`);
+        if (vBrand && !vText.includes(vBrand)) return false;
+        if (vYear !== null) {
+          const mY = String(o.desc || '').match(/(?:19[89]\d|20[0-2]\d)/);
+          if (!mY || Number(mY[0]) < vYear) return false;
+        }
+        if (vKm !== null) {
+          const mK = String(o.desc || '').replace(/,/g, '').match(/(\d{3,6})\s*كم/);
+          if (!mK || Number(mK[1]) > vKm) return false;
+        }
+      }
       return true;
-    }).sort((a, b) => distanceOf(a) - distanceOf(b) || (b.createdAt - a.createdAt));
+    }).sort((a, b) => {
+      // في وضع المفضّلة أو الكل: نعطي أولوية خفيفة للفئات المفضلة إذا كان وضع المفضّلة مفعّلاً
+      if (state.showFavsOnly) {
+        const fa = state.favCats.includes(a.cat) ? 0 : 1;
+        const fb = state.favCats.includes(b.cat) ? 0 : 1;
+        if (fa !== fb) return fa - fb;
+      }
+      if (state.marketSort === 'newest') return (b.createdAt - a.createdAt);
+      if (state.marketSort === 'cheapest') return (Number(a.price) - Number(b.price));
+      return distanceOf(a) - distanceOf(b) || (b.createdAt - a.createdAt);
+    });
   }
 
+  // ملكية الإعلان مبنية على user_id فقط (لا على رقم الهاتف)
   function isOfferOwner(o) {
     if (!isAccountActive()) return false;
-    if (o.userId && state.account.userId && o.userId === state.account.userId) return true;
-    return D.cleanPhone(o.phone) === D.cleanPhone(state.account.phone);
+    return Boolean(o.userId && state.account.userId && o.userId === state.account.userId);
   }
 
   function renderMarket() {
+    renderFavCatsPanel();
     const list = getFilteredOffers();
-    const totalActive = state.offers.filter((o) => o.status !== 'sold' && (!o.expiresAt || o.expiresAt > Date.now()) && matchesGeo(o)).length;
+    const totalActive = state.offers.filter((o) => o.status === 'active' && (!o.expiresAt || o.expiresAt > Date.now()) && matchesGeo(o)).length;
     $('statOffersCount').textContent = String(totalActive);
-    $('marketResultCount').textContent = `${list.length} عرض • الأقرب أولاً`;
+    const sortLbl = state.marketSort === 'newest' ? 'الأحدث' : (state.marketSort === 'cheapest' ? 'الأرخص' : 'الأقرب أولاً');
+    $('marketResultCount').textContent = `${list.length} عرض • ${sortLbl}`;
 
     $('marketCatGridWrap').classList.toggle('hidden', !state.showMarketCatGrid);
+    $('marketFiltersBox').classList.toggle('hidden', !state.showMarketFilters);
+    $('vehicleFilterRow').classList.toggle('hidden', state.marketCat !== 'vehicles');
+
     const activeChip = $('marketActiveCatChip');
     if (state.marketCat !== 'all') {
       const ci = D.getMarketCatInfo(state.marketCat);
@@ -210,7 +295,7 @@
       const ph = D.cleanPhone(o.phone);
       const dist = getDistBadge(o);
       const owner = isOfferOwner(o);
-      const isClosest = idx === 0;
+      const isClosest = idx === 0 && state.marketSort === 'nearest';
       const cardBorder = isClosest ? 'border-2 border-amber-400/90 shadow-md' : 'border border-[#E4EAE8] shadow-sm';
       const topBadge = isClosest
         ? `<span class="inline-flex items-center gap-1 rounded-full bg-amber-100/90 border border-amber-200 px-3 py-1 text-[11px] font-black text-amber-900">⭐ الأقرب إليك</span>`
@@ -230,7 +315,7 @@
           <h3 class="text-base sm:text-lg font-black text-[#132A23] leading-snug">${D.escHtml(o.title)}</h3>
           <div class="flex flex-wrap items-center gap-1.5 text-xs font-bold text-slate-600">
             <span>${D.escHtml(o.seller)}</span>
-            <span class="inline-flex items-center gap-0.5 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-800">✅ موثّق</span>
+            <span class="inline-flex items-center gap-0.5 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-800">✓ حساب Google</span>
             <span>• 📍 ${D.escHtml(o.gov)}</span>
             <span class="text-amber-800">• ⏱️ ${D.escHtml(D.formatRemaining(o.expiresAt))}</span>
           </div>
@@ -243,8 +328,8 @@
             ${o.desc ? `<p class="text-xs font-bold text-slate-700 leading-relaxed">• ${D.escHtml(o.desc)}</p>` : ''}
           </div>
           <div class="grid grid-cols-3 gap-1.5 pt-1">
-            <a href="tel:+216${ph}" class="flex items-center justify-center gap-1 rounded-xl bg-[#0D6857] py-2.5 text-xs font-extrabold text-white hover:bg-[#094D40] transition"><span>📞</span><span>اتصال</span></a>
-            <a href="https://wa.me/216${ph}?text=${encodeURIComponent('مرحباً، بخصوص عرضك على خوذ بايك: ' + o.title)}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl bg-emerald-600 py-2.5 text-xs font-extrabold text-white hover:bg-emerald-700 transition"><span>💬</span><span>واتساب</span></a>
+            ${ph ? `<a href="tel:+216${ph}" class="flex items-center justify-center gap-1 rounded-xl bg-[#0D6857] py-2.5 text-xs font-extrabold text-white hover:bg-[#094D40] transition"><span>📞</span><span>اتصال</span></a>` : '<span></span>'}
+            ${ph ? `<a href="https://wa.me/216${ph}?text=${encodeURIComponent('مرحباً، بخصوص عرضك على خوذ بايك: ' + o.title)}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl bg-emerald-600 py-2.5 text-xs font-extrabold text-white hover:bg-emerald-700 transition"><span>💬</span><span>واتساب</span></a>` : '<span></span>'}
             <button type="button" data-focus-map="market:${D.escHtml(o.id)}" class="flex items-center justify-center gap-1 rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] py-2.5 text-xs font-extrabold text-[#132A23] hover:bg-emerald-50 transition"><span>🗺️</span><span>الخريطة</span></button>
           </div>
           <div class="flex flex-wrap items-center justify-between gap-1.5 pt-1.5 border-t border-slate-100 text-[11px] font-extrabold">
@@ -263,21 +348,48 @@
     box.innerHTML = cardsHtml + moreBtn;
   }
 
-  // ==================== CRAFTSMEN ====================
+  // ==================== CRAFTSMEN + PRICE OBSERVATORY ====================
   function getFilteredCrafts() {
-    const q = state.craftSearch.trim().toLowerCase();
+    const q = D.normalizeAr(state.craftSearch);
     return state.crafts.filter((c) => {
       if (!matchesGeo(c)) return false;
       if (state.craftCat !== 'all' && c.spec !== state.craftCat) return false;
       if (q) {
-        const hay = `${c.name} ${c.area} ${c.gov} ${c.note} ${D.getCraftCatInfo(c.spec).label}`.toLowerCase();
+        const hay = D.normalizeAr(`${c.name} ${c.area} ${c.gov} ${c.note} ${D.getCraftCatInfo(c.spec).label}`);
         if (!hay.includes(q)) return false;
       }
       return true;
     }).sort((a, b) => distanceOf(a) - distanceOf(b) || (b.rating - a.rating));
   }
 
+  function renderCraftPriceGuide() {
+    const box = $('craftPriceGuideBox');
+    const items = state.craftCat !== 'all' ? (C.CRAFT_PRICE_GUIDE[state.craftCat] || []) : [];
+    if (!items.length) {
+      box.classList.add('hidden');
+      return;
+    }
+    const sp = D.getCraftCatInfo(state.craftCat);
+    box.classList.remove('hidden');
+    box.innerHTML = `
+      <div class="flex items-center justify-between gap-2">
+        <h3 class="text-xs font-black text-amber-950">💰 دليل الأسعار التقريبي — ${sp.icon} ${D.escHtml(sp.label)}</h3>
+        <span class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-extrabold text-amber-900">مرصد استرشادي</span>
+      </div>
+      <div class="divide-y divide-amber-200/70">
+        ${items.map((it) => `
+          <div class="flex items-center justify-between gap-2 py-1.5 text-xs">
+            <span class="font-bold text-slate-700">${D.escHtml(it.task)}</span>
+            <span class="shrink-0 font-black text-[#0D6857]">${D.escHtml(it.range)}</span>
+          </div>
+        `).join('')}
+      </div>
+      <p class="text-[10px] font-bold text-amber-900/80">* أسعار تقريبية لليد العاملة فقط في تونس وتختلف حسب الولاية وقطع الغيار.</p>
+    `;
+  }
+
   function renderCrafts() {
+    renderCraftPriceGuide();
     const list = getFilteredCrafts();
     const specInfo = state.craftCat !== 'all' ? D.getCraftCatInfo(state.craftCat) : null;
     $('craftListTitle').textContent = specInfo ? `${specInfo.icon} ${specInfo.label}` : '🛠️ أقرب الحرفيين المتاحين';
@@ -306,11 +418,11 @@
             ${dist ? `<span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-extrabold text-slate-700">📍 ${D.escHtml(dist)}</span>` : ''}
           </div>
           <h3 class="text-sm sm:text-base font-black text-[#132A23]">${D.escHtml(c.name)}</h3>
-          <p class="text-xs font-bold text-slate-500">⭐ ${Number(c.rating).toFixed(1)} (${c.reviews}) • 📍 ${D.escHtml(c.gov)} — ${D.escHtml(c.area)}</p>
+          <p class="text-xs font-bold text-slate-500">⭐ ${Number(c.rating || 5).toFixed(1)} (${Number(c.reviews || 1)}) • 📍 ${D.escHtml(c.gov)} — ${D.escHtml(c.area)}</p>
           <p class="text-xs font-semibold text-slate-700">${D.escHtml(c.note)}</p>
           <div class="grid grid-cols-3 gap-1.5 pt-1 border-t border-slate-100">
-            <a href="tel:+216${ph}" class="flex items-center justify-center gap-1 rounded-xl bg-[#0D6857] py-2 text-xs font-extrabold text-white"><span>📞</span><span>اتصال</span></a>
-            <a href="https://wa.me/216${ph}?text=${encodeURIComponent('مرحباً، وجدت رقمك على خوذ بايك وأحتاج خدمة: ' + sp.label)}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl bg-emerald-600 py-2 text-xs font-extrabold text-white"><span>💬</span><span>واتساب</span></a>
+            ${ph ? `<a href="tel:+216${ph}" class="flex items-center justify-center gap-1 rounded-xl bg-[#0D6857] py-2 text-xs font-extrabold text-white"><span>📞</span><span>اتصال</span></a>` : '<span></span>'}
+            ${ph ? `<a href="https://wa.me/216${ph}?text=${encodeURIComponent('مرحباً، وجدت رقمك على خوذ بايك وأحتاج خدمة: ' + sp.label)}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl bg-emerald-600 py-2 text-xs font-extrabold text-white"><span>💬</span><span>واتساب</span></a>` : '<span></span>'}
             <button type="button" data-focus-map="crafts:${D.escHtml(c.id)}" class="flex items-center justify-center gap-1 rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] py-2 text-xs font-extrabold text-[#132A23]"><span>🗺️</span><span>الموقع</span></button>
           </div>
         </article>
@@ -318,7 +430,7 @@
     }).join('');
   }
 
-  // ==================== EMERGENCIES ====================
+  // ==================== EMERGENCIES (CAREGUARD LIFECYCLE) ====================
   function getFilteredEmergencies() {
     return state.emergencies.filter((e) => {
       if (e.status !== 'open') return false;
@@ -329,28 +441,70 @@
   }
 
   function renderEmergencies() {
+    const myUid = state.account && state.account.userId;
     const allOpen = state.emergencies.filter((e) => e.status === 'open').length;
     const list = getFilteredEmergencies();
     $('emergBannerTitle').textContent = `🚨 طوارئ المواطنين 24/24 — ${state.gov}`;
     $('openEmergencyCounter').textContent = String(allOpen);
     $('navEmergBadge').textContent = String(allOpen);
 
-    const claimedWrap = $('myClaimedBox');
-    if (state.claimedEmergencies.length) {
-      claimedWrap.classList.remove('hidden');
-      $('myClaimedList').innerHTML = state.claimedEmergencies.map((e) => {
-        const ph = D.cleanPhone(e.phone);
+    // 1) بلاغاتي الطارئة النشطة (لصاحب البلاغ: تأكيد التنفيذ = إخفاء فوري)
+    const myOwned = myUid ? state.emergencies.filter((e) => e.userId === myUid && (e.status === 'open' || e.status === 'claimed')) : [];
+    const ownedBox = $('myOwnedEmergBox');
+    if (myOwned.length) {
+      ownedBox.classList.remove('hidden');
+      $('myOwnedEmergList').innerHTML = myOwned.map((e) => {
+        const stTxt = e.status === 'claimed'
+          ? (e.craftsmanStatus === 'completed' ? '✅ الحرفي حدّد أنه تم التنفيذ — يرجى التأكيد' : '🛠️ تم استلام البلاغ والحرفي في الطريق')
+          : '⏳ مفتوح في انتظار استلام حرفي';
         return `
-          <div class="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 space-y-1.5">
-            <div class="flex items-center justify-between text-xs font-black text-emerald-950">
-              <span>✅ استلمت: ${D.escHtml(e.type)} (${D.escHtml(e.gov)})</span>
-              <button type="button" data-finish-claimed="${D.escHtml(e.id)}" class="rounded-lg bg-white border border-emerald-300 px-2 py-0.5 text-[10px] font-extrabold text-emerald-800">إنهاء</button>
+          <div class="rounded-xl border border-amber-300 bg-white p-3 space-y-2">
+            <div class="flex items-center justify-between gap-2 text-xs font-black text-amber-950">
+              <span>🚨 ${D.escHtml(e.type)} (${D.escHtml(e.gov)})</span>
+              <span class="text-[10px] font-bold text-slate-500">${D.escHtml(D.formatAgo(e.createdAt))}</span>
             </div>
+            <p class="text-[11px] font-extrabold text-emerald-800">${stTxt}</p>
             <p class="text-xs font-semibold text-slate-700">${D.escHtml(e.desc)}</p>
-            <div class="flex gap-1.5 pt-1">
-              ${ph ? `<a href="tel:+216${ph}" class="flex-1 rounded-lg bg-[#0D6857] py-1.5 text-center text-xs font-extrabold text-white">📞 اتصال (${D.escHtml(ph)})</a>` : ''}
-              <a href="https://maps.google.com/?q=${e.lat},${e.lng}" target="_blank" rel="noopener" class="flex-1 rounded-lg bg-white border border-emerald-300 py-1.5 text-center text-xs font-extrabold text-emerald-900">🧭 فتح في الخرائط</a>
+            <button type="button" data-owner-confirm-emerg="${D.escHtml(e.id)}" class="w-full rounded-xl bg-[#0D6857] hover:bg-[#094D40] py-2 text-xs font-black text-white">✅ تأكيد التنفيذ (إخفاء البلاغ فوراً)</button>
+          </div>
+        `;
+      }).join('');
+    } else {
+      ownedBox.classList.add('hidden');
+    }
+
+    // 2) البلاغات التي استلمها الحرفي (Google Maps + تم التنفيذ / لم يتم التنفيذ)
+    const myClaimed = myUid ? state.emergencies.filter((e) => e.status === 'claimed' && e.claimedBy === myUid) : [];
+    const claimedWrap = $('myClaimedBox');
+    if (myClaimed.length) {
+      claimedWrap.classList.remove('hidden');
+      $('myClaimedList').innerHTML = myClaimed.map((e) => {
+        const ph = D.cleanPhone(e.phone);
+        const dist = getDistBadge(e);
+        const lat = Number(e.lat), lng = Number(e.lng);
+        const mapsUrl = Number.isFinite(lat) && Number.isFinite(lng)
+          ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(lat + ',' + lng)}`
+          : '';
+        const isMarkedDone = e.craftsmanStatus === 'completed';
+        return `
+          <div class="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3 space-y-2">
+            <div class="flex items-center justify-between gap-2 text-xs font-black text-emerald-950">
+              <span>✅ استلمت: ${D.escHtml(e.type)} (${D.escHtml(e.gov)})</span>
+              ${dist ? `<span class="rounded-full bg-white px-2 py-0.5 text-[10px] font-extrabold text-emerald-800">📍 ${D.escHtml(dist)}</span>` : ''}
             </div>
+            ${e.imageUrl ? `<img src="${D.escHtml(e.imageUrl)}" alt="صورة العطب" class="h-36 w-full rounded-xl object-cover border border-emerald-200" />` : ''}
+            <p class="text-xs font-semibold text-slate-700">${D.escHtml(e.desc)}</p>
+            <div class="grid grid-cols-2 gap-1.5">
+              ${ph ? `<a href="tel:+216${ph}" class="rounded-xl bg-[#0D6857] py-2 text-center text-xs font-extrabold text-white">📞 اتصال (${D.escHtml(ph)})</a>` : ''}
+              ${mapsUrl ? `<a href="${mapsUrl}" target="_blank" rel="noopener" class="rounded-xl bg-blue-700 py-2 text-center text-xs font-extrabold text-white">🧭 التوجّه بـ Google Maps</a>` : ''}
+            </div>
+            ${isMarkedDone
+              ? '<p class="rounded-xl bg-emerald-100 px-3 py-1.5 text-center text-[11px] font-black text-emerald-900">✓ تم إشعار صاحب البلاغ بالتنفيذ — بانتظار تأكيده للإغلاق</p>'
+              : `<div class="grid grid-cols-2 gap-1.5 pt-1 border-t border-emerald-200">
+                   <button type="button" data-craft-done-emerg="${D.escHtml(e.id)}" class="rounded-xl bg-emerald-600 hover:bg-emerald-700 py-2 text-xs font-black text-white">✅ تم التنفيذ</button>
+                   <button type="button" data-craft-fail-emerg="${D.escHtml(e.id)}" class="rounded-xl bg-rose-100 hover:bg-rose-200 border border-rose-300 py-2 text-xs font-black text-rose-800">❌ لم يتم التنفيذ</button>
+                 </div>`
+            }
           </div>
         `;
       }).join('');
@@ -358,6 +512,7 @@
       claimedWrap.classList.add('hidden');
     }
 
+    // 3) قائمة البلاغات المفتوحة
     const box = $('emergencyList');
     if (!list.length) {
       box.innerHTML = `
@@ -372,6 +527,7 @@
     box.innerHTML = list.map((e) => {
       const ph = D.cleanPhone(e.phone);
       const dist = getDistBadge(e);
+      const isMine = myUid && e.userId === myUid;
       return `
         <article class="rounded-3xl border border-rose-200 bg-white p-4 shadow-sm space-y-2.5">
           <div class="flex items-start justify-between gap-2">
@@ -381,11 +537,12 @@
             </div>
             <span class="text-[11px] font-extrabold text-rose-700">📍 ${D.escHtml(e.gov)}${dist ? ' • ' + D.escHtml(dist) : ''}</span>
           </div>
+          ${e.imageUrl ? `<img src="${D.escHtml(e.imageUrl)}" alt="صورة الطارئ" loading="lazy" class="h-44 w-full rounded-2xl object-cover border border-rose-100" />` : ''}
           <p class="text-xs sm:text-sm font-bold text-slate-800 leading-relaxed">${D.escHtml(e.desc)}</p>
           <div class="flex flex-wrap items-center gap-1.5 pt-1 border-t border-rose-100">
             ${ph ? `<a href="tel:+216${ph}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-rose-600 py-2 px-2.5 text-xs font-extrabold text-white"><span>📞</span><span>اتصال</span></a>` : ''}
             <button type="button" data-focus-map="emergency:${D.escHtml(e.id)}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl border border-rose-200 bg-rose-50 py-2 px-2.5 text-xs font-extrabold text-rose-800"><span>🗺️</span><span>الموقع</span></button>
-            <button type="button" data-claim-emerg="${D.escHtml(e.id)}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-[#0D6857] py-2 px-2.5 text-xs font-extrabold text-white"><span>✅</span><span>استلام</span></button>
+            ${!isMine ? `<button type="button" data-claim-emerg="${D.escHtml(e.id)}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-[#0D6857] py-2 px-2.5 text-xs font-extrabold text-white"><span>✅</span><span>استلام</span></button>` : ''}
           </div>
         </article>
       `;
@@ -416,8 +573,8 @@
       $('trialBar').style.width = `${pct}%`;
       $('trialEndTxt').textContent = `تنتهي التجربة المجانية في: ${new Date(endMs).toLocaleDateString('ar-TN')}`;
 
-      const myOffers = state.offers.filter((o) => isOfferOwner(o) && o.status !== 'sold');
-      const myCrafts = state.crafts.filter((c) => D.cleanPhone(c.phone) === D.cleanPhone(acc.phone));
+      const myOffers = state.offers.filter((o) => isOfferOwner(o) && o.status === 'active');
+      const myCrafts = state.crafts.filter((c) => c.userId && c.userId === acc.userId);
       const items = [
         ...myOffers.map((o) => `<div class="flex items-center justify-between gap-2 rounded-xl bg-[#F8FAF9] border border-[#E4EAE8] px-3 py-2 text-[#132A23]"><span class="truncate">🧺 ${D.escHtml(o.title)} (${D.escHtml(o.price)} د.ت)</span><button type="button" data-mark-sold="${D.escHtml(o.id)}" class="shrink-0 rounded-lg bg-amber-100 px-2 py-0.5 text-[10px] font-extrabold text-amber-950">✅ تم البيع</button></div>`),
         ...myCrafts.map((c) => `<div class="rounded-xl bg-[#F8FAF9] border border-[#E4EAE8] px-3 py-2 text-[#132A23]">🛠️ ${D.escHtml(c.name)} (${D.escHtml(c.gov)})</div>`)
@@ -481,17 +638,28 @@
   function openModal(id) {
     if (id === 'offerModal' && !requireActiveAccount('⚠️ لنشر عرض، فعّل حسابك عبر Google ورقم الهاتف التونسي أولاً.')) return;
     if (id === 'craftModal' && !requireActiveAccount('⚠️ لإضافة مهنتك، فعّل حسابك عبر Google ورقم الهاتف التونسي أولاً.')) return;
+    if (id === 'emergencyModal' && !requireActiveAccount('⚠️ لنشر بلاغ طارئ، فعّل حسابك عبر Google ورقم الهاتف التونسي أولاً.')) return;
 
     $(id).classList.remove('hidden');
     if (id === 'emergencyModal') {
       $('emGov').value = state.gov;
-      if (state.account && state.account.phone) $('emPhone').value = state.account.phone;
+      $('emPhone').value = (state.account && state.account.phone) || '';
+      state.pendingEmPhoto = null;
+      $('emPhotoPreview').classList.add('hidden');
+      $('emPhotoStatus').textContent = '📸 إضافة صورة للعطب (اختياري — كاميرا أو معرض، تُضغط تلقائياً)';
       const g = D.getGovObj(state.gov);
-      state.pickerCoords = state.userCoords ? { ...state.userCoords } : { lat: g.lat, lng: g.lng };
-      $('emCoordsTxt').textContent = `${state.pickerCoords.lat.toFixed(4)}, ${state.pickerCoords.lng.toFixed(4)}`;
+      if (state.userCoords) {
+        state.pickerCoords = { ...state.userCoords };
+        state.emLocationConfirmed = true;
+      } else {
+        state.pickerCoords = { lat: g.lat, lng: g.lng };
+        state.emLocationConfirmed = false;
+      }
+      updateEmDistancePreview();
       M.ensurePicker(state.pickerCoords, (pt) => {
         state.pickerCoords = pt;
-        $('emCoordsTxt').textContent = `${pt.lat.toFixed(4)}, ${pt.lng.toFixed(4)}`;
+        state.emLocationConfirmed = true;
+        updateEmDistancePreview();
       });
     } else if (id === 'offerModal') {
       $('ofGov').value = state.gov;
@@ -500,7 +668,7 @@
       state.pendingOfferPhoto = null;
       state.offerCoords = state.userCoords ? { ...state.userCoords } : null;
       $('ofPhotoPreview').classList.add('hidden');
-      $('ofPhotoStatus').textContent = '📸 اضغط لالتقاط صورة المنتوج أو السيارة (تُضغط تلقائياً < 100 KB)';
+      $('ofPhotoStatus').textContent = '📸 اضغط لاختيار صورة من المعرض أو الكاميرا (تُضغط تلقائياً < 55 KB)';
       $('ofGpsStatus').textContent = state.offerCoords ? `✓ موقع GPS جاهز (${state.offerCoords.lat.toFixed(3)}, ${state.offerCoords.lng.toFixed(3)})` : 'سيُستخدم موقع الولاية أو اضغط لتحديد موقعك الدقيق';
       toggleVehicleFields();
     } else if (id === 'craftModal') {
@@ -549,7 +717,7 @@
     if (!navigator.geolocation) return showToast('⚠️ المتصفح لا يدعم تحديد الموقع؛ يمكنك اختيار الولاية يدوياً.');
     showToast('📡 جاري تحديد موقعك الجغرافي...');
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         const { latitude, longitude } = pos.coords;
         state.userCoords = { lat: latitude, lng: longitude };
         const best = D.detectNearestGov(latitude, longitude);
@@ -558,6 +726,7 @@
         D.lsSet(D.STORE_KEYS.prefs, { gov: state.gov, radius: state.radius });
         renderAll();
         showToast(`✓ تم ربط موقعك بولاية ${state.gov} وترتيب الأقرب أولاً`);
+        if (await D.syncFromSupabase(state, true)) renderAll();
       },
       () => showToast('⚠️ تعذر قراءة GPS؛ تم الإبقاء على ولاية ' + state.gov),
       { enableHighAccuracy: true, timeout: 7000 }
@@ -567,12 +736,57 @@
   $('marketShowAllBtn').addEventListener('click', () => {
     state.marketCat = 'all';
     state.showMarketCatGrid = false;
+    state.showFavsOnly = false;
+    state.showFavsPanel = false;
+    state.marketLimit = 15;
     renderAll();
   });
 
   $('marketToggleCatsBtn').addEventListener('click', () => {
     state.showMarketCatGrid = !state.showMarketCatGrid;
-    $('marketCatGridWrap').classList.toggle('hidden', !state.showMarketCatGrid);
+    state.showFavsPanel = false;
+    renderMarket();
+  });
+
+  $('marketFavsBtn').addEventListener('click', () => {
+    state.showFavsOnly = !state.showFavsOnly;
+    state.showFavsPanel = state.showFavsOnly;
+    state.showMarketCatGrid = false;
+    state.marketCat = 'all';
+    state.marketLimit = 15;
+    renderMarket();
+  });
+
+  $('closeFavPanelBtn').addEventListener('click', () => {
+    state.showFavsPanel = false;
+    renderMarket();
+  });
+
+  $('marketFiltersToggleBtn').addEventListener('click', () => {
+    state.showMarketFilters = !state.showMarketFilters;
+    renderMarket();
+  });
+
+  $('marketSortSelect').addEventListener('change', (e) => { state.marketSort = e.target.value; renderMarket(); });
+  $('filterMinPrice').addEventListener('input', (e) => { state.minPrice = e.target.value; renderMarket(); });
+  $('filterMaxPrice').addEventListener('input', (e) => { state.maxPrice = e.target.value; renderMarket(); });
+  $('filterVehBrand').addEventListener('input', (e) => { state.vehBrand = e.target.value; renderMarket(); });
+  $('filterVehYear').addEventListener('input', (e) => { state.vehYear = e.target.value; renderMarket(); });
+  $('filterVehKm').addEventListener('input', (e) => { state.vehKm = e.target.value; renderMarket(); });
+  $('clearMarketFiltersBtn').addEventListener('click', () => {
+    state.marketSort = 'nearest';
+    state.minPrice = '';
+    state.maxPrice = '';
+    state.vehBrand = '';
+    state.vehYear = '';
+    state.vehKm = '';
+    $('marketSortSelect').value = 'nearest';
+    $('filterMinPrice').value = '';
+    $('filterMaxPrice').value = '';
+    $('filterVehBrand').value = '';
+    $('filterVehYear').value = '';
+    $('filterVehKm').value = '';
+    renderMarket();
   });
 
   $('marketClearCatBtn').addEventListener('click', () => {
@@ -580,8 +794,20 @@
     renderAll();
   });
 
-  $('marketSearch').addEventListener('input', (e) => { state.marketSearch = e.target.value; renderMarket(); });
-  $('craftSearch').addEventListener('input', (e) => { state.craftSearch = e.target.value; renderCrafts(); });
+  // إصلاح خانة البحث بالكامل (input + search + keyup مع تطبيع التشكيل)
+  function onMarketSearchChange(e) {
+    state.marketSearch = e.target.value || '';
+    state.marketLimit = 15;
+    renderMarket();
+  }
+  ['input', 'search', 'keyup'].forEach((ev) => $('marketSearch').addEventListener(ev, onMarketSearchChange));
+
+  function onCraftSearchChange(e) {
+    state.craftSearch = e.target.value || '';
+    renderCrafts();
+  }
+  ['input', 'search', 'keyup'].forEach((ev) => $('craftSearch').addEventListener(ev, onCraftSearchChange));
+
   $('ofCat').addEventListener('change', toggleVehicleFields);
 
   $('ofPhotoInput').addEventListener('change', async (e) => {
@@ -597,6 +823,22 @@
     } catch (_) {
       state.pendingOfferPhoto = null;
       $('ofPhotoStatus').textContent = '⚠️ تعذر قراءة الصورة، جرّب صورة أخرى.';
+    }
+  });
+
+  $('emPhotoInput').addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    $('emPhotoStatus').textContent = '⏳ جاري ضغط صورة العطب...';
+    try {
+      const res = await D.compressImageFile(file, 680, 55000);
+      state.pendingEmPhoto = res;
+      $('emPhotoPreview').src = res.dataUrl;
+      $('emPhotoPreview').classList.remove('hidden');
+      $('emPhotoStatus').textContent = `✓ الصورة جاهزة (${res.sizeKb} KB)`;
+    } catch (_) {
+      state.pendingEmPhoto = null;
+      $('emPhotoStatus').textContent = '⚠️ تعذر قراءة الصورة، جرّب صورة أخرى.';
     }
   });
 
@@ -616,10 +858,24 @@
     const navBtn = e.target.closest('[data-tab]');
     if (navBtn) return switchTab(navBtn.dataset.tab);
 
+    const favToggle = e.target.closest('[data-toggle-fav-cat]');
+    if (favToggle) {
+      const cid = favToggle.dataset.toggleFavCat;
+      if (state.favCats.includes(cid)) state.favCats = state.favCats.filter((x) => x !== cid);
+      else state.favCats.push(cid);
+      D.lsSet(D.STORE_KEYS.favCats, state.favCats);
+      renderCategoryBars();
+      renderMarket();
+      return;
+    }
+
     const mCat = e.target.closest('[data-market-cat]');
     if (mCat) {
       state.marketCat = mCat.dataset.marketCat;
       state.showMarketCatGrid = false;
+      state.showFavsOnly = false;
+      state.showFavsPanel = false;
+      state.marketLimit = 15;
       renderCategoryBars();
       renderMarket();
       return;
@@ -657,6 +913,7 @@
       $('radiusSelect').value = 'all';
       D.lsSet(D.STORE_KEYS.prefs, { gov: state.gov, radius: state.radius });
       renderAll();
+      if (await D.syncFromSupabase(state, true)) renderAll();
       return;
     }
 
@@ -672,7 +929,8 @@
     const soldBtn = e.target.closest('[data-mark-sold]');
     if (soldBtn) {
       const id = soldBtn.dataset.markSold;
-      await D.markOfferSold(id, state.account && state.account.userId);
+      const res = await D.markOfferSold(id, state.account && state.account.userId);
+      if (!res.ok) return showToast('⚠️ تعذر تحديث حالة الإعلان: ' + (res.error || 'حاول مجدداً'));
       state.offers = state.offers.map((o) => o.id === id ? { ...o, status: 'sold' } : o);
       D.lsSet(D.STORE_KEYS.offers, state.offers);
       renderAll();
@@ -704,8 +962,6 @@
     if (claimBtn) {
       if (!requireActiveAccount('⚠️ لاستلام بلاغ طارئ، فعّل حسابك عبر Google ورقم الهاتف أولاً.')) return;
       const id = claimBtn.dataset.claimEmerg;
-      const item = state.emergencies.find((x) => x.id === id);
-      if (!item) return;
       const res = await D.claimEmergencyAtomic(id, state.account && state.account.userId);
       if (res.alreadyClaimed) {
         state.emergencies = state.emergencies.filter((x) => x.id !== id);
@@ -713,22 +969,50 @@
         showToast('⚠️ تم استلام هذا البلاغ للتو من طرف شخص آخر.');
         return;
       }
-      state.emergencies = state.emergencies.map((em) => em.id === id ? { ...em, status: 'claimed', claimedBy: state.account.userId } : em);
-      state.claimedEmergencies.unshift({ ...item, status: 'claimed' });
+      if (!res.ok) {
+        showToast('⚠️ تعذر استلام البلاغ: ' + (res.error || 'تحقق من اتصالك'));
+        return;
+      }
+      state.emergencies = state.emergencies.map((em) => em.id === id ? { ...em, status: 'claimed', claimedBy: state.account.userId, craftsmanStatus: 'in_progress' } : em);
       D.lsSet(D.STORE_KEYS.emergencies, state.emergencies);
-      D.lsSet(D.STORE_KEYS.claimed, state.claimedEmergencies);
       renderAll();
-      showToast('✅ تم استلام البلاغ وإخفاؤه من القائمة العامة — بيانات التواصل محفوظة لك بالأعلى.');
+      showToast('✅ تم استلام البلاغ — يمكنك التوجّه الآن عبر Google Maps.');
       return;
     }
 
-    const finBtn = e.target.closest('[data-finish-claimed]');
-    if (finBtn) {
-      const id = finBtn.dataset.finishClaimed;
-      state.claimedEmergencies = state.claimedEmergencies.filter((x) => x.id !== id);
-      D.lsSet(D.STORE_KEYS.claimed, state.claimedEmergencies);
+    const doneBtn = e.target.closest('[data-craft-done-emerg]');
+    if (doneBtn) {
+      const id = doneBtn.dataset.craftDoneEmerg;
+      const res = await D.markEmergencyCraftsmanStatus(id, state.account && state.account.userId, 'completed');
+      if (!res.ok) return showToast('⚠️ تعذر التحديث: ' + (res.error || 'حاول مجدداً'));
+      state.emergencies = state.emergencies.map((em) => em.id === id ? { ...em, craftsmanStatus: 'completed' } : em);
+      D.lsSet(D.STORE_KEYS.emergencies, state.emergencies);
       renderEmergencies();
-      showToast('✓ تم إغلاق البلاغ بنجاح.');
+      showToast('✅ تم تسجيل التنفيذ — بانتظار تأكيد صاحب البلاغ.');
+      return;
+    }
+
+    const failBtn = e.target.closest('[data-craft-fail-emerg]');
+    if (failBtn) {
+      const id = failBtn.dataset.craftFailEmerg;
+      const res = await D.markEmergencyCraftsmanStatus(id, state.account && state.account.userId, 'not_completed');
+      if (!res.ok) return showToast('⚠️ تعذر إعادة فتح البلاغ: ' + (res.error || 'حاول مجدداً'));
+      state.emergencies = state.emergencies.map((em) => em.id === id ? { ...em, status: 'open', claimedBy: '', craftsmanStatus: 'pending' } : em);
+      D.lsSet(D.STORE_KEYS.emergencies, state.emergencies);
+      renderAll();
+      showToast('↩️ تم إرجاع البلاغ مفتوحاً ليتولّاه حرفي آخر.');
+      return;
+    }
+
+    const ownerConfBtn = e.target.closest('[data-owner-confirm-emerg]');
+    if (ownerConfBtn) {
+      const id = ownerConfBtn.dataset.ownerConfirmEmerg;
+      const res = await D.confirmEmergencyOwner(id, state.account && state.account.userId);
+      if (!res.ok) return showToast('⚠️ تعذر تأكيد التنفيذ: ' + (res.error || 'حاول مجدداً'));
+      state.emergencies = state.emergencies.filter((em) => em.id !== id);
+      D.lsSet(D.STORE_KEYS.emergencies, state.emergencies);
+      renderAll();
+      showToast('✅ تم تأكيد التنفيذ وإخفاء البلاغ فوراً. شكراً لك!');
       return;
     }
 
@@ -756,21 +1040,24 @@
   $('emGov').addEventListener('change', (e) => {
     const g = D.getGovObj(e.target.value);
     state.pickerCoords = { lat: g.lat, lng: g.lng };
+    state.emLocationConfirmed = false;
     M.movePicker(g.lat, g.lng, 12);
-    $('emCoordsTxt').textContent = `${g.lat.toFixed(4)}, ${g.lng.toFixed(4)}`;
+    updateEmDistancePreview();
   });
 
   $('emUseGpsBtn').addEventListener('click', () => {
-    if (!navigator.geolocation) return showToast('⚠️ GPS غير متاح');
+    if (!navigator.geolocation) return showToast('⚠️ GPS غير متاح، اضغط مباشرة على الخريطة لتأكيد موقعك.');
+    showToast('📡 جاري التقاط موقعك عبر GPS...');
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
         state.pickerCoords = { lat: latitude, lng: longitude };
-        M.movePicker(latitude, longitude, 14);
-        $('emCoordsTxt').textContent = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-        showToast('📍 تم تحديد موقع البلاغ عبر GPS');
+        state.emLocationConfirmed = true;
+        M.movePicker(latitude, longitude, 15);
+        updateEmDistancePreview();
+        showToast('📍 تم تأكيد موقع البلاغ عبر GPS');
       },
-      () => showToast('⚠️ تعذر قراءة الموقع، اضغط مباشرة على الخريطة')
+      () => showToast('⚠️ تعذر قراءة GPS، اضغط مباشرة على موقعك في الخريطة')
     );
   });
 
@@ -805,9 +1092,11 @@
       verified: true
     };
     const saved = await D.saveCloudAccount(acc);
-    if (!saved.ok && D.isSupabaseConnected()) {
-      showToast('⚠️ تعذر حفظ الحساب سحابياً — تأكد من تشغيل ملف supabase_v1.1_migration.sql');
+    if (!saved.ok) {
+      return showToast('⚠️ تعذر حفظ الحساب سحابياً: ' + (saved.error || 'حاول مجدداً'));
     }
+    acc.createdAt = saved.createdAt || acc.createdAt;
+    acc.trialEndsAt = saved.trialEndsAt || acc.trialEndsAt;
     state.account = acc;
     D.lsSet(D.STORE_KEYS.account, acc);
     renderAccount();
@@ -834,54 +1123,108 @@
     await D.deleteUserAccountAndData(uid);
     state.authUser = null;
     state.account = null;
-    state.claimedEmergencies = [];
     closeModal('deleteAccountModal');
     renderAll();
     showToast('✓ تم حذف حسابك وبياناتك نهائياً.');
   });
 
+  // ==================== SUBMIT: EMERGENCY ====================
   $('emergencyForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const newEm = {
-      id: 'em-' + Date.now(),
-      type: $('emType').value,
-      gov: $('emGov').value,
-      desc: $('emDesc').value.trim(),
-      phone: D.cleanPhone($('emPhone').value),
-      lat: state.pickerCoords.lat,
-      lng: state.pickerCoords.lng,
-      createdAt: Date.now(),
-      status: 'open',
-      claimedBy: ''
-    };
-    const res = await D.pushEmergency(newEm);
-    newEm.id = res.id || newEm.id;
-    state.emergencies.unshift(newEm);
-    D.lsSet(D.STORE_KEYS.emergencies, state.emergencies);
-    e.target.reset();
-    closeModal('emergencyModal');
-    renderAll();
-    showToast('🚨 تم نشر البلاغ الطارئ بنجاح!');
+    if (!requireActiveAccount('⚠️ لنشر بلاغ طارئ، فعّل حسابك أولاً.')) return;
+    if (!state.emLocationConfirmed) {
+      return showToast('⚠️ تحديد الموقع إجباري: اضغط على زر GPS أو حدّد مكانك على الخريطة.');
+    }
+    const ph = D.cleanPhone($('emPhone').value || state.account.phone);
+    if (!D.isValidTnPhone(ph)) {
+      return showToast('⚠️ يرجى إدخال رقم هاتف تونسي صحيح (8 أرقام).');
+    }
+    const desc = $('emDesc').value.trim();
+    const mod = D.checkContentModeration(`${$('emType').value} ${desc}`);
+    if (!mod.ok) return showToast(mod.reason);
+
+    const submitBtn = $('emSubmitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '⏳ جاري نشر البلاغ الطارئ...';
+    try {
+      let imageUrl = '';
+      if (state.pendingEmPhoto) {
+        const up = await D.uploadOfferImage(state.pendingEmPhoto.blob, state.account.userId, 'em');
+        if (!up.ok) {
+          showToast('⚠️ تعذر رفع الصورة: ' + up.error + ' — سيتم النشر بدون صورة أو حاول مجدداً.');
+        } else {
+          imageUrl = up.url;
+        }
+      }
+      const newEm = {
+        id: 'em-' + Date.now(),
+        type: $('emType').value,
+        gov: $('emGov').value,
+        desc,
+        phone: ph,
+        imageUrl,
+        lat: state.pickerCoords.lat,
+        lng: state.pickerCoords.lng,
+        createdAt: Date.now(),
+        status: 'open',
+        userId: state.account.userId,
+        claimedBy: '',
+        craftsmanStatus: 'pending'
+      };
+      const res = await D.pushEmergency(newEm);
+      if (!res.ok) {
+        return showToast('⚠️ تعذر نشر البلاغ: ' + (res.error || 'تحقق من اتصالك بالإنترنت'));
+      }
+      newEm.id = res.id || newEm.id;
+      state.emergencies.unshift(newEm);
+      D.lsSet(D.STORE_KEYS.emergencies, state.emergencies);
+      e.target.reset();
+      state.pendingEmPhoto = null;
+      closeModal('emergencyModal');
+      renderAll();
+      showToast('🚨 تم نشر البلاغ الطارئ بنجاح! سيظهر لأقرب الحرفيين فوراً.');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'نشر البلاغ الطارئ فوراً';
+    }
   });
 
+  // ==================== SUBMIT: OFFER ====================
   $('offerForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!requireActiveAccount()) return;
+
+    const ph = D.cleanPhone($('ofPhone').value || state.account.phone);
+    if (!D.isValidTnPhone(ph)) {
+      return showToast('⚠️ يرجى إدخال رقم هاتف تونسي صحيح (8 أرقام).');
+    }
+    const title = $('ofTitle').value.trim();
+    const rawDesc = $('ofDesc').value.trim();
+    const price = Number($('ofPrice').value);
+    if (!Number.isFinite(price) || price <= 0) {
+      return showToast('⚠️ يرجى إدخال سعر صحيح أكبر من 0.');
+    }
+    const mod = D.checkContentModeration(`${title} ${rawDesc} ${$('ofSeller').value}`);
+    if (!mod.ok) return showToast(mod.reason);
+
     const submitBtn = $('ofSubmitBtn');
     submitBtn.disabled = true;
     submitBtn.textContent = '⏳ جاري رفع الصورة ونشر العرض...';
     try {
       const g = D.getGovObj($('ofGov').value);
-      const jitter = () => (Math.random() - 0.5) * 0.015;
-      const lat = state.offerCoords ? state.offerCoords.lat : (g.lat + jitter());
-      const lng = state.offerCoords ? state.offerCoords.lng : (g.lng + jitter());
+      const lat = state.offerCoords ? state.offerCoords.lat : g.lat;
+      const lng = state.offerCoords ? state.offerCoords.lng : g.lng;
 
       let imageUrl = '';
       if (state.pendingOfferPhoto) {
-        imageUrl = await D.uploadOfferImage(state.pendingOfferPhoto.blob, state.pendingOfferPhoto.dataUrl, state.account.userId);
+        const up = await D.uploadOfferImage(state.pendingOfferPhoto.blob, state.account.userId, 'of');
+        if (!up.ok) {
+          return showToast('⚠️ تعذر رفع الصورة إلى الخادم: ' + up.error);
+        }
+        imageUrl = up.url;
       }
 
-      let desc = $('ofDesc').value.trim();
+      let desc = rawDesc;
       if ($('ofCat').value === 'vehicles') {
         const specs = [
           $('vehBrand').value.trim(),
@@ -894,11 +1237,11 @@
 
       const newOf = {
         id: 'of-' + Date.now(),
-        title: $('ofTitle').value.trim(),
+        title,
         cat: $('ofCat').value,
-        price: Number($('ofPrice').value),
+        price,
         gov: $('ofGov').value,
-        phone: D.cleanPhone($('ofPhone').value || state.account.phone),
+        phone: ph,
         seller: $('ofSeller').value.trim(),
         desc,
         imageUrl,
@@ -909,9 +1252,8 @@
         expiresAt: Date.now() + C.OFFER_TTL_HOURS * C.HR
       };
       const res = await D.pushOffer(newOf);
-      if (!res.ok && res.error && res.error.includes('10')) {
-        showToast('⚠️ ' + res.error);
-        return;
+      if (!res.ok) {
+        return showToast('⚠️ تعذر نشر العرض: ' + (res.error || 'حاول مجدداً'));
       }
       newOf.id = res.id || newOf.id;
       state.offers.unshift(newOf);
@@ -920,45 +1262,71 @@
       state.pendingOfferPhoto = null;
       closeModal('offerModal');
       renderAll();
-      showToast('✓ تم نشر عرضك (يختفي تلقائياً بعد 3 أيام أو عند الضغط على تم البيع)');
+      showToast('✓ تم نشر عرضك بنجاح (صالح لمدة 3 أيام)');
     } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = 'نشر العرض الآن (صالح 3 أيام)';
     }
   });
 
+  // ==================== SUBMIT: CRAFTSMAN ====================
   $('craftForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!requireActiveAccount()) return;
-    const g = D.getGovObj($('crGov').value);
-    const jitter = () => (Math.random() - 0.5) * 0.015;
-    const newCr = {
-      id: 'cr-' + Date.now(),
-      name: $('crName').value.trim(),
-      spec: $('crSpec').value,
-      gov: $('crGov').value,
-      area: $('crArea').value.trim(),
-      phone: D.cleanPhone($('crPhone').value || state.account.phone),
-      note: $('crNote').value.trim(),
-      userId: state.account.userId || '',
-      rating: 5.0,
-      reviews: 1,
-      lat: state.userCoords ? state.userCoords.lat : (g.lat + jitter()),
-      lng: state.userCoords ? state.userCoords.lng : (g.lng + jitter())
-    };
-    await D.pushCraft(newCr);
-    state.crafts.unshift(newCr);
-    D.lsSet(D.STORE_KEYS.crafts, state.crafts);
-    e.target.reset();
-    closeModal('craftModal');
-    renderAll();
-    showToast('✓ تمت إضافة بطاقتك في دليل الحرفيين!');
+    const ph = D.cleanPhone($('crPhone').value || state.account.phone);
+    if (!D.isValidTnPhone(ph)) {
+      return showToast('⚠️ يرجى إدخال رقم هاتف تونسي صحيح (8 أرقام).');
+    }
+    const name = $('crName').value.trim();
+    const area = $('crArea').value.trim();
+    const note = $('crNote').value.trim();
+    const mod = D.checkContentModeration(`${name} ${area} ${note}`);
+    if (!mod.ok) return showToast(mod.reason);
+
+    const submitBtn = $('crSubmitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '⏳ جاري الحفظ...';
+    try {
+      const g = D.getGovObj($('crGov').value);
+      const newCr = {
+        id: 'cr-' + Date.now(),
+        name,
+        spec: $('crSpec').value,
+        gov: $('crGov').value,
+        area,
+        phone: ph,
+        note,
+        userId: state.account.userId || '',
+        rating: 5.0,
+        reviews: 1,
+        lat: state.userCoords ? state.userCoords.lat : g.lat,
+        lng: state.userCoords ? state.userCoords.lng : g.lng
+      };
+      const res = await D.pushCraft(newCr);
+      if (!res.ok) {
+        return showToast('⚠️ تعذر تسجيل الحرفي: ' + (res.error || 'حاول مجدداً'));
+      }
+      newCr.id = res.id || newCr.id;
+      state.crafts.unshift(newCr);
+      D.lsSet(D.STORE_KEYS.crafts, state.crafts);
+      e.target.reset();
+      closeModal('craftModal');
+      renderAll();
+      showToast('✓ تمت إضافة بطاقتك في دليل الحرفيين!');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'حفظ وإظهار في دليل الحرفيين';
+    }
   });
 
+  // ==================== SUBMIT: REPORT ====================
   $('reportForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!state.reportTarget) return;
-    await D.submitReport(state.reportTarget.type, state.reportTarget.id, $('reportReason').value, state.account && state.account.userId);
+    const res = await D.submitReport(state.reportTarget.type, state.reportTarget.id, $('reportReason').value, state.account && state.account.userId);
+    if (!res.ok) {
+      return showToast('⚠️ تعذر إرسال البلاغ: ' + (res.error || 'حاول مجدداً'));
+    }
     closeModal('reportModal');
     showToast('🚩 شكراً لك، تم إرسال البلاغ لمراجعة الإعلان.');
   });
@@ -972,7 +1340,7 @@
     renderAll();
     if (D.isSupabaseConnected()) {
       $('syncBadge').textContent = '🟢 متصل بـ Supabase';
-      const [authUser, synced] = await Promise.all([D.getAuthUser(), D.syncFromSupabase(state)]);
+      const [authUser, synced] = await Promise.all([D.getAuthUser(), D.syncFromSupabase(state, true)]);
       if (authUser) {
         state.authUser = authUser;
         const cloudAcc = await D.fetchCloudAccount(authUser.id);
@@ -983,6 +1351,9 @@
           state.account = null;
         }
       }
+      D.subscribeEmergencies(async () => {
+        if (await D.syncFromSupabase(state, true)) renderAll();
+      });
       if (synced || authUser) renderAll();
     }
   }

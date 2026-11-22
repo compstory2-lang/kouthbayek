@@ -11,10 +11,9 @@
 </head>
 <body>
 
-  <!-- Top Teal-Green Rounded Header (Matches User Reference UI) -->
+  <!-- Top Teal-Green Rounded Header -->
   <header class="kb-header sticky top-0 z-30 shadow-md">
     <div class="mx-auto max-w-2xl px-3.5 pt-3 pb-3.5 space-y-2.5">
-      <!-- Top Brand & Legal Row -->
       <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-2.5 min-w-0">
           <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 border border-white/25 text-2xl shadow-sm">🧺</div>
@@ -68,21 +67,63 @@
       <div class="flex items-center gap-2">
         <div class="relative flex-1">
           <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-emerald-800">🔍</span>
-          <input id="marketSearch" type="search" placeholder="ابحث عن سردينة، علوش، سيارة، دراجة، زيت..." class="w-full rounded-2xl border border-[#DCE4E1] bg-white py-2.5 pr-9 pl-3 text-xs sm:text-sm font-bold text-[#132A23] placeholder:text-slate-400 outline-none focus:border-[#0D6857]" />
+          <input id="marketSearch" type="search" autocomplete="off" placeholder="ابحث عن خضر، لحم، سردينة، جبن، سيارة..." class="w-full rounded-2xl border border-[#DCE4E1] bg-white py-2.5 pr-9 pl-3 text-xs sm:text-sm font-bold text-[#132A23] placeholder:text-slate-400 outline-none focus:border-[#0D6857]" />
         </div>
         <button id="openOfferModalBtn" type="button" class="shrink-0 rounded-2xl bg-[#0D6857] hover:bg-[#094D40] active:scale-95 px-3.5 py-2.5 text-xs sm:text-sm font-black text-white shadow-sm transition">+ أضف عرضاً</button>
       </div>
 
-      <!-- Market View Toggle (Categories Grid vs All Offers) -->
-      <div class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2">
-          <button id="marketShowAllBtn" type="button" class="rounded-full bg-[#0D6857] px-3 py-1 text-xs font-extrabold text-white">✨ كل العروض (<span id="statOffersCount">0</span>)</button>
-          <button id="marketToggleCatsBtn" type="button" class="rounded-full border border-[#D4DFDB] bg-white px-3 py-1 text-xs font-extrabold text-[#132A23]">📂 تصفح الفئات</button>
+      <!-- Market View Toggle (All / Categories / Favorites / Filters) -->
+      <div class="flex flex-wrap items-center justify-between gap-1.5">
+        <div class="flex flex-wrap items-center gap-1.5">
+          <button id="marketShowAllBtn" type="button" class="rounded-full bg-[#0D6857] px-3 py-1 text-xs font-extrabold text-white">✨ الكل (<span id="statOffersCount">0</span>)</button>
+          <button id="marketToggleCatsBtn" type="button" class="rounded-full border border-[#D4DFDB] bg-white px-3 py-1 text-xs font-extrabold text-[#132A23]">📂 الفئات</button>
+          <button id="marketFavsBtn" type="button" class="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-extrabold text-amber-950">⭐ المفضّلة (<span id="favCatsCount">0</span>)</button>
+          <button id="marketFiltersToggleBtn" type="button" class="rounded-full border border-[#D4DFDB] bg-white px-3 py-1 text-xs font-extrabold text-[#132A23]">🎛️ فلاتر</button>
         </div>
         <span id="marketResultCount" class="text-[11px] font-extrabold text-emerald-800">الأقرب أولاً</span>
       </div>
 
-      <!-- 2-Column Market Category Grid (Matches Screenshots 1000063064 / 1000063067) -->
+      <!-- Favorites Category Subscription Panel -->
+      <div id="favCatsPanel" class="hidden rounded-3xl border border-amber-300 bg-amber-50/70 p-3.5 space-y-2.5 shadow-sm">
+        <div class="flex items-center justify-between gap-2">
+          <p class="text-xs font-black text-amber-950">⭐ اختر الفئات التي تتابعها لتظهر إعلاناتها أولاً:</p>
+          <button id="closeFavPanelBtn" type="button" class="rounded-lg bg-white border border-amber-200 px-2 py-0.5 text-[11px] font-extrabold text-amber-900">تم</button>
+        </div>
+        <div id="favCatsChips" class="flex flex-wrap gap-1.5"></div>
+      </div>
+
+      <!-- Market Advanced Filters (Price, Sort, & Dynamic Vehicle Filters) -->
+      <div id="marketFiltersBox" class="hidden rounded-3xl border border-[#DCE4E1] bg-white p-3.5 shadow-sm space-y-2.5">
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label for="marketSortSelect" class="block text-[10px] font-extrabold text-slate-600 mb-1">الترتيب</label>
+            <select id="marketSortSelect" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-2 py-1.5 text-xs font-bold outline-none">
+              <option value="nearest">📍 الأقرب أولاً</option>
+              <option value="newest">🕒 الأحدث</option>
+              <option value="cheapest">💰 الأرخص</option>
+            </select>
+          </div>
+          <div>
+            <label for="filterMinPrice" class="block text-[10px] font-extrabold text-slate-600 mb-1">السعر من (د.ت)</label>
+            <input id="filterMinPrice" type="number" min="0" step="0.5" placeholder="0" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-2 py-1.5 text-xs font-bold outline-none" dir="ltr" />
+          </div>
+          <div>
+            <label for="filterMaxPrice" class="block text-[10px] font-extrabold text-slate-600 mb-1">السعر إلى (د.ت)</label>
+            <input id="filterMaxPrice" type="number" min="0" step="0.5" placeholder="الكل" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-2 py-1.5 text-xs font-bold outline-none" dir="ltr" />
+          </div>
+        </div>
+        <!-- Vehicle-specific filters (shown automatically when vehicles category is selected) -->
+        <div id="vehicleFilterRow" class="hidden grid grid-cols-3 gap-2 pt-1.5 border-t border-slate-100">
+          <input id="filterVehBrand" type="text" placeholder="الماركة (Clio..)" class="rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-2 py-1.5 text-xs font-bold outline-none" />
+          <input id="filterVehYear" type="number" min="1980" max="2027" placeholder="السنة من (2015)" class="rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-2 py-1.5 text-xs font-bold outline-none" dir="ltr" />
+          <input id="filterVehKm" type="number" min="0" placeholder="أقصى كم (150000)" class="rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-2 py-1.5 text-xs font-bold outline-none" dir="ltr" />
+        </div>
+        <div class="flex justify-end">
+          <button id="clearMarketFiltersBtn" type="button" class="text-[11px] font-extrabold text-rose-700 hover:underline">مسح الفلاتر</button>
+        </div>
+      </div>
+
+      <!-- 2-Column Market Category Grid -->
       <div id="marketCatGridWrap" class="hidden space-y-2">
         <div id="marketCatBar" class="grid grid-cols-2 gap-2.5"></div>
       </div>
@@ -93,7 +134,7 @@
         <button id="marketClearCatBtn" type="button" class="rounded-lg bg-white px-2.5 py-1 text-[11px] font-extrabold text-emerald-900 border border-amber-200">← كل العروض</button>
       </div>
 
-      <!-- Market Offers Feed (Magazine-Style Cards Matching 1000063061 / 1000063062) -->
+      <!-- Market Offers Feed -->
       <div id="marketList" class="space-y-3.5"></div>
     </section>
 
@@ -102,18 +143,21 @@
       <div class="flex items-center gap-2">
         <div class="relative flex-1">
           <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-emerald-800">🔍</span>
-          <input id="craftSearch" type="search" placeholder="ابحث عن حرفي (فريغوريست، سبّاك، كهربائي، ميكانيكي...)" class="w-full rounded-2xl border border-[#DCE4E1] bg-white py-2.5 pr-9 pl-3 text-xs sm:text-sm font-bold text-[#132A23] placeholder:text-slate-400 outline-none focus:border-[#0D6857]" />
+          <input id="craftSearch" type="search" autocomplete="off" placeholder="ابحث عن حرفي (فريغوريست، سباك، كهربائي، ميكانيكي...)" class="w-full rounded-2xl border border-[#DCE4E1] bg-white py-2.5 pr-9 pl-3 text-xs sm:text-sm font-bold text-[#132A23] placeholder:text-slate-400 outline-none focus:border-[#0D6857]" />
         </div>
         <button id="openCraftModalBtn" type="button" class="shrink-0 rounded-2xl bg-[#0D6857] hover:bg-[#094D40] active:scale-95 px-3.5 py-2.5 text-xs sm:text-sm font-black text-white shadow-sm transition">+ أضف مهنتك</button>
       </div>
 
-      <p class="text-xs font-bold text-slate-600">اختر الاختصاص لعرض أقرب أصحاب الصنعة والخدمات إليك</p>
+      <p class="text-xs font-bold text-slate-600">اختر الاختصاص لعرض أقرب أصحاب الصنعة ودليل الأسعار التقريبي</p>
 
-      <!-- Craft Group Pills (الكل / صيانة المنزل / مهن السيارات / البناء والأبواب) -->
+      <!-- Craft Group Pills -->
       <div id="craftGroupBar" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1"></div>
 
-      <!-- 2-Column Craft Specialty Grid (Matches Screenshots 1000063069–1000063073) -->
+      <!-- 2-Column Craft Specialty Grid -->
       <div id="craftCatBar" class="grid grid-cols-2 gap-2.5"></div>
+
+      <!-- Indicative Craft Price Observatory Card -->
+      <div id="craftPriceGuideBox" class="hidden rounded-3xl border border-amber-200 bg-[#FFF9EC] p-3.5 shadow-sm space-y-2"></div>
 
       <!-- Active Specialty Header + Crafts List -->
       <div class="flex items-center justify-between pt-1">
@@ -131,12 +175,18 @@
           <span class="shrink-0 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-black"><span id="openEmergencyCounter">0</span> مفتوح</span>
         </div>
         <p class="text-xs font-semibold text-rose-100 leading-relaxed">
-          عندك عطل مستعجل في الدار أو الكرهبة أو تحتاج عامل يومي؟ حط بلاغك وموقعك توا، وأي حرفي قريب يشوفه يتصل بيك مباشرة. عند الاستلام يختفي البلاغ فوراً عن البقية.
+          عندك عطل مستعجل في الدار أو الكرهبة؟ حط بلاغك مع موقعك الدقيق (وصورة اختيارية)، وأي حرفي قريب يستلمه ويتوجّه إليك عبر Google Maps. وعند تأكيدك للتنفيذ يختفي البلاغ فوراً.
         </p>
         <button id="openEmergencyModalBtn" type="button" class="w-full rounded-2xl bg-white hover:bg-rose-50 active:scale-[0.99] py-3 text-sm font-black text-[#B91C1C] shadow-sm transition">+ أبلغ عن عطل طارئ الآن</button>
       </div>
 
-      <!-- Claimed Emergencies (Private to Claimer) -->
+      <!-- Owner's Active Emergencies (Confirm Completion -> Instant Hide) -->
+      <div id="myOwnedEmergBox" class="hidden rounded-2xl border-2 border-amber-300 bg-amber-50/70 p-3.5 shadow-sm space-y-2">
+        <h3 class="text-xs font-black text-amber-950">📋 بلاغاتي الطارئة النشطة (أكّد التنفيذ لإخفاء البلاغ فوراً)</h3>
+        <div id="myOwnedEmergList" class="space-y-2"></div>
+      </div>
+
+      <!-- Claimed Emergencies (Private to Claimer — CareGuard Style) -->
       <div id="myClaimedBox" class="hidden rounded-2xl border border-emerald-200 bg-white p-3.5 shadow-sm space-y-2">
         <h3 class="text-xs font-black text-emerald-900">📌 البلاغات التي استلمتها (مخفية الآن عن العموم)</h3>
         <div id="myClaimedList" class="space-y-2"></div>
@@ -166,16 +216,16 @@
       </div>
     </section>
 
-    <!-- ==================== TAB 5: ACCOUNT (حسابي — Google OAuth + رقم الهاتف الإجباري) ==================== -->
+    <!-- ==================== TAB 5: ACCOUNT (حسابي) ==================== -->
     <section id="tab-account" class="tab-panel hidden space-y-3.5">
       <div class="space-y-1 px-1">
         <h2 class="text-lg font-black text-[#132A23]">👤 فضاء الحرفيين وأصحاب النصب والمحلات</h2>
         <p class="text-xs font-semibold text-slate-600 leading-relaxed">
-          التصفح مفتوح للجميع مجاناً • الدخول بحساب <strong>Google</strong> وتأكيد <strong>رقم الهاتف التونسي</strong> مخصّص للمعلنين لنشر العروض وإدارتها (<strong>60 يوماً مجاناً</strong>).
+          التصفح مفتوح للجميع مجاناً • الدخول بحساب <strong>Google</strong> وتأكيد <strong>رقم الهاتف التونسي</strong> مخصّص للنشر واستلام الطوارئ (<strong>60 يوماً مجاناً</strong>).
         </p>
       </div>
 
-      <!-- Step 1: Google OAuth (No PIN) -->
+      <!-- Step 1: Google OAuth -->
       <div id="accountGoogleBox" class="rounded-3xl border border-[#E4EAE8] bg-white p-5 shadow-sm text-center space-y-3.5">
         <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-3xl">🔐</div>
         <h3 class="text-base font-black text-[#132A23]">دخول سريع بحساب Google</h3>
@@ -208,7 +258,7 @@
           </div>
           <div>
             <label for="accPhone" class="block text-xs font-extrabold text-slate-700 mb-1">رقم الهاتف التونسي (إجباري — 8 أرقام) *</label>
-            <input id="accPhone" type="tel" inputmode="numeric" maxlength="8" required placeholder="مثال: 55192340" class="w-full rounded-xl border-2 border-[#0D6857] bg-[#F8FAF9] px-3 py-2.5 text-sm font-black outline-none" dir="ltr" />
+            <input id="accPhone" type="tel" inputmode="tel" maxlength="16" required placeholder="55192340 أو +216 55192340" class="w-full rounded-xl border-2 border-[#0D6857] bg-[#F8FAF9] px-3 py-2.5 text-sm font-black outline-none" dir="ltr" />
           </div>
           <button type="submit" class="w-full rounded-2xl bg-[#0D6857] hover:bg-[#094D40] py-3 text-sm font-black text-white shadow-sm transition">تفعيل الحساب وتجربة 60 يوماً المجانية ←</button>
         </form>
@@ -252,7 +302,7 @@
     </section>
   </main>
 
-  <!-- Fixed 5-Tab Bottom Navigation (Matches Exact Labels & Icons in Screenshots) -->
+  <!-- Fixed 5-Tab Bottom Navigation -->
   <nav class="fixed bottom-0 inset-x-0 z-40 border-t border-[#E4EAE8] bg-white/95 backdrop-blur shadow-[0_-4px_18px_rgba(0,0,0,0.06)]">
     <div class="mx-auto grid max-w-2xl grid-cols-5 px-1 pt-2 pb-2.5 text-center">
       <button type="button" data-tab="market" class="kb-nav-btn active flex flex-col items-center gap-0.5 text-slate-500">
@@ -279,7 +329,7 @@
     </div>
   </nav>
 
-  <!-- MODAL: EMERGENCY -->
+  <!-- MODAL: EMERGENCY (Photo + Mandatory GPS/Map + Distance) -->
   <div id="emergencyModal" class="hidden fixed inset-0 z-50 kb-modal-backdrop flex items-end sm:items-center justify-center p-2 sm:p-4">
     <div class="w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl bg-white p-4 shadow-2xl space-y-3">
       <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
@@ -287,6 +337,13 @@
         <button type="button" data-close-modal="emergencyModal" class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">✕</button>
       </div>
       <form id="emergencyForm" class="space-y-3">
+        <div class="rounded-2xl border-2 border-dashed border-rose-300 bg-rose-50/40 p-2.5 text-center space-y-1.5">
+          <label for="emPhotoInput" class="block cursor-pointer">
+            <img id="emPhotoPreview" src="" alt="معاينة صورة العطب" class="hidden mx-auto mb-1.5 max-h-36 rounded-xl object-cover shadow-sm" />
+            <span id="emPhotoStatus" class="block text-xs font-extrabold text-rose-800">📸 إضافة صورة للعطب (اختياري — كاميرا أو معرض، تُضغط تلقائياً)</span>
+          </label>
+          <input id="emPhotoInput" type="file" accept="image/*" class="hidden" />
+        </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label for="emType" class="block text-xs font-extrabold text-slate-700 mb-1">نوع الطارئ</label>
@@ -308,18 +365,22 @@
           <textarea id="emDesc" rows="2" required placeholder="صف الطارئ ومكانه بدقة..." class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-rose-500"></textarea>
         </div>
         <div>
-          <label for="emPhone" class="block text-xs font-extrabold text-slate-700 mb-1">رقم الهاتف (اختياري)</label>
-          <input id="emPhone" type="tel" inputmode="numeric" maxlength="8" placeholder="55123456" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-rose-500" dir="ltr" />
+          <label for="emPhone" class="block text-xs font-extrabold text-slate-700 mb-1">رقم الهاتف التونسي (إجباري للتواصل) *</label>
+          <input id="emPhone" type="tel" inputmode="tel" maxlength="16" required placeholder="55123456" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-rose-500" dir="ltr" />
         </div>
         <div>
-          <div class="flex items-center justify-between mb-1">
-            <span class="text-xs font-extrabold text-slate-700">📍 حدد موقع البلاغ على الخريطة</span>
-            <button id="emUseGpsBtn" type="button" class="text-[11px] font-extrabold text-emerald-700 hover:underline">استخدام موقعي</button>
+          <div class="flex items-center justify-between mb-1 gap-2">
+            <span class="text-xs font-extrabold text-rose-800">📍 حدد موقعك بدقة (إجباري) *</span>
+            <button id="emUseGpsBtn" type="button" class="rounded-lg bg-amber-100 border border-amber-300 px-2.5 py-1 text-[11px] font-black text-amber-950 hover:bg-amber-200">📡 التقاط GPS</button>
           </div>
-          <div id="emPickerMap" class="overflow-hidden rounded-2xl border border-[#DCE4E1]" style="height: 185px; width: 100%;"></div>
-          <p id="emCoordsTxt" class="mt-1 text-[11px] font-bold text-slate-500" dir="ltr">33.8815, 10.0982</p>
+          <div id="emPickerMap" class="overflow-hidden rounded-2xl border-2 border-rose-200" style="height: 175px; width: 100%;"></div>
+          <div class="mt-1 flex items-center justify-between text-[11px] font-bold">
+            <span id="emLocBadge" class="text-rose-700">⚠️ اضغط على الخريطة أو زر GPS لتأكيد الموقع</span>
+            <span id="emDistPreview" class="text-emerald-800"></span>
+          </div>
+          <p id="emCoordsTxt" class="text-[10px] font-bold text-slate-400" dir="ltr">33.8815, 10.0982</p>
         </div>
-        <button type="submit" class="w-full rounded-xl bg-rose-600 hover:bg-rose-700 py-2.5 text-sm font-black text-white">نشر البلاغ الطارئ فوراً</button>
+        <button id="emSubmitBtn" type="submit" class="w-full rounded-xl bg-rose-600 hover:bg-rose-700 py-2.5 text-sm font-black text-white">نشر البلاغ الطارئ فوراً</button>
       </form>
     </div>
   </div>
@@ -335,13 +396,13 @@
         <div class="rounded-2xl border-2 border-dashed border-emerald-300 bg-emerald-50/40 p-3 text-center space-y-2">
           <label for="ofPhotoInput" class="block cursor-pointer">
             <img id="ofPhotoPreview" src="" alt="معاينة الصورة" class="hidden mx-auto mb-2 max-h-40 rounded-xl object-cover shadow-sm" />
-            <span id="ofPhotoStatus" class="block text-xs font-extrabold text-emerald-900">📸 اضغط لالتقاط صورة المنتوج أو السيارة (تُضغط تلقائياً &lt; 100 KB)</span>
+            <span id="ofPhotoStatus" class="block text-xs font-extrabold text-emerald-900">📸 اضغط لاختيار صورة من المعرض أو الكاميرا (تُضغط تلقائياً &lt; 55 KB)</span>
           </label>
-          <input id="ofPhotoInput" type="file" accept="image/*" capture="environment" class="hidden" />
+          <input id="ofPhotoInput" type="file" accept="image/*" class="hidden" />
         </div>
         <div>
           <label for="ofTitle" class="block text-xs font-extrabold text-slate-700 mb-1">عنوان العرض</label>
-          <input id="ofTitle" type="text" required placeholder="مثال: سردينة طازجة باب بحر أو رينو كليو 4" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]" />
+          <input id="ofTitle" type="text" required minlength="3" placeholder="مثال: طماطم وفلفل طازج أو سردينة باب بحر" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]" />
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
@@ -350,7 +411,7 @@
           </div>
           <div>
             <label for="ofPrice" class="block text-xs font-extrabold text-slate-700 mb-1">السعر (د.ت)</label>
-            <input id="ofPrice" type="number" min="0.5" step="0.5" required placeholder="95" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]" dir="ltr" />
+            <input id="ofPrice" type="number" min="0.001" step="0.001" required placeholder="5.250" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]" dir="ltr" />
           </div>
         </div>
         <div id="vehicleSpecsBox" class="hidden rounded-2xl border border-emerald-200 bg-[#F8FAF9] p-3 space-y-2">
@@ -378,7 +439,7 @@
           </div>
           <div>
             <label for="ofPhone" class="block text-xs font-extrabold text-slate-700 mb-1">رقم الهاتف التونسي</label>
-            <input id="ofPhone" type="tel" inputmode="numeric" maxlength="8" required placeholder="55192340" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]" dir="ltr" />
+            <input id="ofPhone" type="tel" inputmode="tel" maxlength="16" required placeholder="55192340" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]" dir="ltr" />
           </div>
         </div>
         <div class="grid grid-cols-2 gap-2 items-end">
@@ -419,7 +480,7 @@
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label for="crPhone" class="block text-xs font-extrabold text-slate-700 mb-1">رقم الهاتف التونسي</label>
-            <input id="crPhone" type="tel" inputmode="numeric" maxlength="8" required placeholder="98123456" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]" dir="ltr" />
+            <input id="crPhone" type="tel" inputmode="tel" maxlength="16" required placeholder="98123456" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]" dir="ltr" />
           </div>
           <div>
             <label for="crArea" class="block text-xs font-extrabold text-slate-700 mb-1">المعتمدية / الحي</label>
@@ -430,7 +491,7 @@
           <label for="crNote" class="block text-xs font-extrabold text-slate-700 mb-1">وصف مختصر للخدمات</label>
           <input id="crNote" type="text" required placeholder="تركيب وصيانة وشحن غاز المكيفات..." class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]" />
         </div>
-        <button type="submit" class="w-full rounded-xl bg-[#0D6857] hover:bg-[#094D40] py-2.5 text-sm font-black text-white">حفظ وإظهار في دليل الحرفيين</button>
+        <button id="crSubmitBtn" type="submit" class="w-full rounded-xl bg-[#0D6857] hover:bg-[#094D40] py-2.5 text-sm font-black text-white">حفظ وإظهار في دليل الحرفيين</button>
       </form>
     </div>
   </div>
@@ -449,7 +510,7 @@
           <option value="رقم هاتف خاطئ أو لا يجيب">رقم هاتف خاطئ أو لا يجيب</option>
           <option value="السلعة مباعة أو غير متوفرة">السلعة مباعة أو غير متوفرة</option>
           <option value="سعر غير حقيقي أو إعلان مضلل">سعر غير حقيقي أو إعلان مضلل</option>
-          <option value="محتوى مخالف">محتوى مخالف</option>
+          <option value="محتوى مخالف أو غير ملائم للفئة">محتوى مخالف أو غير ملائم للفئة</option>
         </select>
         <button type="submit" class="w-full rounded-xl bg-rose-600 hover:bg-rose-700 py-2.5 text-xs font-black text-white">إرسال البلاغ</button>
       </form>
@@ -478,7 +539,7 @@
       </div>
       <div class="space-y-2.5 text-xs sm:text-sm font-semibold text-slate-700 leading-relaxed">
         <p><strong>1. طبيعة المنصة:</strong> تعمل منصة <strong>«خوذ بايك»</strong> كدليل إعلاني وخدمي رقمي يربط بين المواطنين والمعلنين والحرفيين عبر الولايات التونسية الـ 24.</p>
-        <p><strong>2. مسؤولية المعلنين ومقدمي الخدمات:</strong> تبقى مسؤولية صحة البيانات والأسعار وجودة السلع والمركبات والخدمات كاملةً على المعلن أو مقدم الخدمة.</p>
+        <p><strong>2. سياسة المحتوى والرقابة الذاتية:</strong> يُمنع منعاً باتاً نشر إعلانات الخمور أو الممنوعات أو الألفاظ السوقية أو الإعلانات غير الملائمة للفئة، ويُخفى تلقائياً أي إعلان يتلقى 3 بلاغات.</p>
         <p><strong>3. صلاحية الإعلانات:</strong> تختفي الإعلانات تلقائياً بعد <strong>3 أيام</strong> (72 ساعة) سواء بيعت أم لا، ويمكن لصاحب الإعلان إغلاقه فوراً بزر «تم البيع».</p>
         <p><strong>4. بلاغات الطوارئ 24/24:</strong> خدمة البلاغات للتنبيه والمساعدة المحلية ولا تغني عن الاتصال بالحماية المدنية (<strong>198</strong>) أو الشرطة (<strong>197</strong>) أو الحرس الوطني (<strong>193</strong>) أو الإسعاف (<strong>190</strong>).</p>
       </div>

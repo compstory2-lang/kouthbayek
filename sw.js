@@ -1,5 +1,5 @@
-// خوذ بايك — Service Worker v1.1 (Network-first للملفات الأساسية لتفادي الكاش القديم)
-const CACHE_NAME = 'khouz-bayek-v1.1';
+// خوذ بايك — Service Worker v1.4 (تخزين الردود السليمة فقط res.ok)
+const CACHE_NAME = 'khouz-bayek-v1.4';
 const CORE_ASSETS = ['./', './index.html', './styles.css', './config.js', './data.js', './map.js', './app.js', './privacy.html'];
 
 self.addEventListener('install', (event) => {
@@ -23,8 +23,10 @@ self.addEventListener('fetch', (event) => {
   if (isCore) {
     event.respondWith(
       fetch(req).then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE_NAME).then((c) => c.put(req, copy));
+        if (res && res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((c) => c.put(req, copy));
+        }
         return res;
       }).catch(() => caches.match(req))
     );
