@@ -253,6 +253,7 @@
             <label for="accPhone" class="block text-xs font-extrabold text-slate-700 mb-1">رقم الهاتف التونسي (إجباري — 8 أرقام) *</label>
             <input id="accPhone" type="tel" inputmode="tel" maxlength="16" required placeholder="55192340 أو +216 55192340" class="w-full rounded-xl border-2 border-[#0D6857] bg-[#F8FAF9] px-3 py-2.5 text-sm font-black outline-none" dir="ltr" />
           </div>
+          <div id="accPrivacySlot"></div>
           <button type="submit" class="w-full rounded-2xl bg-[#0D6857] hover:bg-[#094D40] py-3 text-sm font-black text-white shadow-sm transition">تفعيل الحساب وتجربة 60 يوماً المجانية ←</button>
         </form>
       </div>
@@ -294,6 +295,9 @@
         <button id="switchAccountBtn" type="button" class="w-full rounded-2xl border-2 border-slate-300 bg-white py-3 text-xs font-black text-slate-800 hover:bg-slate-50 transition">🔄 تسجيل الخروج والدخول بحساب Google آخر</button>
         <button id="openDeleteAccModalBtn" type="button" class="w-full rounded-2xl border border-rose-200 bg-white py-2.5 text-xs font-black text-rose-700 hover:bg-rose-50 transition">🗑️ حذف حسابي وبياناتي نهائياً</button>
       </div>
+
+      <!-- Direct Private Message to Admin (Supabase Write-Only) -->
+      <button type="button" data-open-contact="اقتراح أو استفسار عام" class="w-full rounded-2xl border border-[#DCE4E1] bg-white py-3 text-xs font-black text-[#0D6857] hover:bg-emerald-50 shadow-sm transition">✉️ مراسلة إدارة «خوذ بايك» (استفسار / تبليغ / طلب حذف)</button>
     </section>
   </main>
 
@@ -375,6 +379,7 @@
           </div>
           <p id="emCoordsTxt" class="text-[10px] font-bold text-slate-400" dir="ltr">33.8815, 10.0982</p>
         </div>
+        <div id="emPrivacySlot"></div>
         <button id="emSubmitBtn" type="submit" class="w-full rounded-xl bg-rose-600 hover:bg-rose-700 py-2.5 text-sm font-black text-white">نشر البلاغ الطارئ فوراً</button>
       </form>
     </div>
@@ -455,6 +460,7 @@
           <button id="ofGpsBtn" type="button" class="rounded-xl border border-emerald-300 bg-emerald-50 py-2 px-2.5 text-xs font-extrabold text-emerald-900 hover:bg-emerald-100">📍 موقعي الدقيق</button>
         </div>
         <p id="ofGpsStatus" class="text-[10px] font-bold text-slate-500"></p>
+        <div id="offerPrivacySlot"></div>
         <button id="ofSubmitBtn" type="submit" class="w-full rounded-xl bg-[#0D6857] hover:bg-[#094D40] py-2.5 text-sm font-black text-white">نشر العرض الآن</button>
       </form>
     </div>
@@ -540,6 +546,7 @@
           <label for="crNote" class="block text-xs font-extrabold text-slate-700 mb-1">وصف مختصر للخدمات</label>
           <input id="crNote" type="text" required placeholder="تركيب وصيانة وشحن غاز المكيفات..." class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]" />
         </div>
+        <div id="craftPrivacySlot"></div>
         <button id="crSubmitBtn" type="submit" class="w-full rounded-xl bg-[#0D6857] hover:bg-[#094D40] py-2.5 text-sm font-black text-white">حفظ وإظهار في دليل الحرفيين</button>
       </form>
     </div>
@@ -559,6 +566,7 @@
           <option value="رقم هاتف خاطئ أو لا يجيب">رقم هاتف خاطئ أو لا يجيب</option>
           <option value="السلعة مباعة أو غير متوفرة">السلعة مباعة أو غير متوفرة</option>
           <option value="سعر غير حقيقي أو إعلان مضلل">سعر غير حقيقي أو إعلان مضلل</option>
+          <option value="سلعة مشبوهة أو غير قانونية">سلعة مشبوهة أو غير قانونية</option>
           <option value="محتوى مخالف أو غير ملائم للفئة">محتوى مخالف أو غير ملائم للفئة</option>
         </select>
         <button type="submit" class="w-full rounded-xl bg-rose-600 hover:bg-rose-700 py-2.5 text-xs font-black text-white">إرسال البلاغ</button>
@@ -587,10 +595,15 @@
         <button type="button" data-close-modal="termsModal" class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">✕</button>
       </div>
       <div class="space-y-2.5 text-xs sm:text-sm font-semibold text-slate-700 leading-relaxed">
-        <p><strong>1. طبيعة المنصة:</strong> تعمل منصة <strong>«خوذ بايك»</strong> كدليل إعلاني وخدمي رقمي يربط بين المواطنين والمعلنين والحرفيين عبر الولايات التونسية الـ 24.</p>
-        <p><strong>2. سياسة المحتوى والرقابة الذاتية:</strong> يُمنع منعاً باتاً نشر إعلانات الخمور أو الممنوعات أو الألفاظ السوقية أو الإعلانات غير الملائمة للفئة، ويُخفى تلقائياً أي إعلان يتلقى 3 بلاغات.</p>
-        <p><strong>3. صلاحية الإعلانات:</strong> تُحذف كل إعلانات البيع والشراء تلقائياً بعد <strong>24 ساعة</strong> (أو بعد المدة القصيرة المختارة بالساعات)، ويمكن لصاحب الإعلان إغلاقه فوراً بزر «تم البيع».</p>
-        <p><strong>4. بلاغات الطوارئ 24/24:</strong> خدمة البلاغات للتنبيه والمساعدة المحلية ولا تغني عن الاتصال بالحماية المدنية (<strong>198</strong>) أو الشرطة (<strong>197</strong>) أو الحرس الوطني (<strong>193</strong>) أو الإسعاف (<strong>190</strong>).</p>
+        <p><strong>1. طبيعة المنصة:</strong> «خوذ بايك» هي <strong>مبادرة فردية مجانية غير ربحية</strong> تقتصر على دور الوسيط التقني للربط بين المواطنين والحرفيين وأصحاب العروض في الولايات الـ 24، ولا تتدخل في البيع أو الشراء أو الاتفاقات المالية.</p>
+        <p><strong>2. شرعية المعروضات وإخلاء المسؤولية:</strong> يتحمل الناشر وحده كامل المسؤولية المدنية والجزائية عن معروضاته، ولا تتحمل المنصة أي مسؤولية إذا تبيّن أن السلعة <strong>مسروقة أو مقلّدة أو مجهولة المصدر أو مخالفة للقانون التونسي</strong>.</p>
+        <p><strong>3. الرقابة الذاتية والتبليغ:</strong> يُمنع نشر الخمور والممنوعات والألفاظ السوقية أو نشر أرقام هواتف الغير دون إذن. تحتفظ الإدارة بحق الحذف الفوري، كما يُخفى تلقائياً أي إعلان يتلقى 3 بلاغات.</p>
+        <p><strong>4. صلاحية الإعلانات:</strong> تُحذف كل إعلانات البيع والشراء تلقائياً بعد <strong>24 ساعة</strong> (أو المدة الأقصر المختارة)، ويمكن إغلاقها فوراً بزر «تم البيع».</p>
+        <p><strong>5. طوارئ 24/24:</strong> خدمة للصيانة المستعجلة فقط ولا تغني عن أرقام النجدة الرسمية: الحماية المدنية (<strong>198</strong>)، الشرطة (<strong>197</strong>)، الحرس الوطني (<strong>193</strong>)، والإسعاف (<strong>190</strong>).</p>
+        <div class="pt-1 flex flex-col gap-2">
+          <a href="./privacy.html" class="font-black text-[#0D6857] underline">🔒 قراءة سياسة حماية المعطيات الشخصية الكاملة (القانون عدد 63 لسنة 2004)</a>
+          <button type="button" data-open-contact="طلب حذف معطيات / رقم هاتف" class="w-full rounded-xl border border-emerald-300 bg-emerald-50 py-2 text-xs font-black text-[#0D6857] hover:bg-emerald-100 transition">✉️ مراسلة الإدارة مباشرة (طلب حذف أو تبليغ)</button>
+        </div>
       </div>
       <button type="button" data-close-modal="termsModal" class="w-full rounded-xl bg-[#0D6857] py-2.5 text-sm font-black text-white">فهمت وموافق</button>
     </div>
@@ -603,6 +616,7 @@
   <script src="./config.js"></script>
   <script src="./data.js"></script>
   <script src="./map.js"></script>
+  <script src="./privacy.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-// خوذ بايك — طبقة البيانات والأمان والبث الحي وتعديل السعر السريع وRealtime (v1.5-TN)
+// خوذ بايك — طبقة البيانات والأمان والبث الحي وتعديل السعر السريع وRealtime ومراسلة الإدارة (v1.5-TN)
 window.KB_DATA = (() => {
   'use strict';
 
@@ -427,7 +427,6 @@ window.KB_DATA = (() => {
     }
   }
 
-  // تحديث سريع للسعر مع حفظ السعر السابق لإظهار شارة «تخفيض الآن 🔥» عند النزول
   async function updateOfferPrice(offerId, userId, newPrice, oldPrice) {
     if (!sbClient || !userId) return { ok: false, error: 'يجب تسجيل الدخول' };
     try {
@@ -443,7 +442,6 @@ window.KB_DATA = (() => {
     }
   }
 
-  // زر «أنا هنا الآن»: تحديث موقع البائع أو إيقاف البث
   async function updateOfferLiveLocation(offerId, userId, lat, lng, isLive) {
     if (!sbClient || !userId) return { ok: false, error: 'يجب تسجيل الدخول' };
     try {
@@ -543,7 +541,6 @@ window.KB_DATA = (() => {
     }
   }
 
-  // إعادة فتح البلاغ بيد صاحبه في حال عدم الاتفاق على السعر
   async function reopenEmergencyOwner(emergId, userId) {
     if (!sbClient || !userId) return { ok: false, error: 'يجب تسجيل الدخول' };
     try {
@@ -571,6 +568,34 @@ window.KB_DATA = (() => {
       return { ok: !error, error: error ? error.message : '' };
     } catch (err) {
       return { ok: false, error: (err && err.message) || 'تعذر إرسال البلاغ' };
+    }
+  }
+
+  // إرسال رسالة خاصة إلى الإدارة عبر Supabase دون كشف أي بريد إلكتروني
+  async function submitAdminMessage(payload) {
+    if (!sbClient) return { ok: false, error: 'غير متصل بالخادم حالياً.' };
+    const msg = String((payload && payload.message) || '').trim();
+    if (msg.length < 5) {
+      return { ok: false, error: 'يرجى كتابة رسالة واضحة (5 أحرف على الأقل).' };
+    }
+    const rawPhone = String((payload && payload.senderPhone) || '').trim();
+    const cleanedPhone = rawPhone ? cleanPhone(rawPhone) : '';
+    if (rawPhone && !isValidTnPhone(cleanedPhone)) {
+      return { ok: false, error: 'رقم الهاتف التونسي غير صحيح (8 أرقام أو اتركه فارغاً).' };
+    }
+    try {
+      const { error } = await sbClient.from('kb_messages').insert({
+        topic: String((payload && payload.topic) || 'استفسار عام').slice(0, 100),
+        sender_name: String((payload && payload.senderName) || '').trim().slice(0, 100),
+        sender_phone: cleanedPhone,
+        message: msg.slice(0, 1500),
+        sender_user_id: (payload && payload.userId) || null,
+        source_page: String((payload && payload.sourcePage) || 'app').slice(0, 30),
+        status: 'unread'
+      });
+      return { ok: !error, error: error ? error.message : '' };
+    } catch (err) {
+      return { ok: false, error: (err && err.message) || 'تعذر إرسال الرسالة، حاول مجدداً.' };
     }
   }
 
@@ -605,6 +630,6 @@ window.KB_DATA = (() => {
     signInWithGoogle, getAuthUser, fetchCloudAccount, saveCloudAccount, signOutGoogle, deleteUserAccountAndData,
     syncFromSupabase, pushOffer, markOfferSold, updateOfferPrice, updateOfferLiveLocation,
     pushCraft, pushEmergency, claimEmergencyAtomic, markEmergencyCraftsmanStatus,
-    confirmEmergencyOwner, reopenEmergencyOwner, submitReport, subscribeEmergencies
+    confirmEmergencyOwner, reopenEmergencyOwner, submitReport, submitAdminMessage, subscribeEmergencies
   };
 })();
