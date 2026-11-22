@@ -68,9 +68,10 @@
   }
 
   function getMyCraftSpecs() {
-    if (!isAccountActive() || !state.account || !state.account.userId) return [];
+    const uid = (state.account && state.account.userId) || (state.authUser && state.authUser.id) || '';
+    if (!uid) return [];
     return state.crafts
-      .filter((c) => c.userId === state.account.userId)
+      .filter((c) => c.userId === uid)
       .map((c) => String(c.spec || '').trim())
       .filter(Boolean);
   }
@@ -84,7 +85,7 @@
       'كهربائي طوارئ': ['electric'],
       'تسرب غاز': ['plumbing', 'heating'],
       'عطل سيارة': ['auto', 'auto_elec'],
-      'مساعدة عاجلة': ['plumbing', 'electric', 'ac', 'appliances', 'heating', 'build', 'tiler', 'painter', 'waterproof', 'plaster', 'carpenter', 'alu', 'shutters', 'welder', 'locksmith', 'glass', 'tanks', 'pest', 'handyman', 'worker', 'auto', 'auto_elec']
+      'مساعدة عاجلة': ['handyman', 'worker']
     };
 
     const allowedSpecs = specMap[emergType] || [];
