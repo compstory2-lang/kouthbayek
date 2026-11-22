@@ -47,6 +47,7 @@
     reportTarget: null,
     quickPriceTarget: null,
     shareTarget: null,
+    shareKind: 'offer',
     editingCraftId: null,
     sharedOfferId: null,
     liveWatchId: null,
@@ -92,12 +93,8 @@
     return mySpecs.some((sp) => allowedSpecs.includes(sp));
   }
 
-  function isEmergencyVisibleToUser(em) {
-    const myUid = state.account && state.account.userId;
-    if (myUid && em.userId === myUid) return true;
-    const mySpecs = getMyCraftSpecs();
-    if (!mySpecs.length) return true;
-    return canClaimEmergency(em.type);
+  function isEmergencyVisibleToUser(_em) {
+    return true;
   }
 
   function requireActiveAccount(reasonMsg) {
@@ -655,9 +652,10 @@
           ${e.imageUrl ? `<img src="${D.escHtml(e.imageUrl)}" alt="صورة العطب" loading="lazy" class="h-44 w-full rounded-2xl object-cover border border-rose-100" />` : ''}
           <p class="text-xs sm:text-sm font-bold text-slate-800 leading-relaxed">${D.escHtml(e.desc)}</p>
           <div class="flex flex-wrap items-center gap-1.5 pt-1 border-t border-rose-100">
-            ${ph ? `<a href="tel:+216${ph}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-rose-600 py-2 px-2.5 text-xs font-extrabold text-white"><span>📞</span><span>اتصال</span></a>` : ''}
-            <button type="button" data-focus-map="emergency:${D.escHtml(e.id)}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl border border-rose-200 bg-rose-50 py-2 px-2.5 text-xs font-extrabold text-rose-800"><span>🗺️</span><span>الموقع</span></button>
-            ${canClaim ? `<button type="button" data-claim-emerg="${D.escHtml(e.id)}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-[#0D6857] py-2 px-2.5 text-xs font-extrabold text-white"><span>✅</span><span>استلام</span></button>` : ''}
+            ${ph ? `<a href="tel:+216${ph}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-rose-600 py-2 px-2 text-xs font-extrabold text-white"><span>📞</span><span>اتصال</span></a>` : ''}
+            <button type="button" data-focus-map="emergency:${D.escHtml(e.id)}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl border border-rose-200 bg-rose-50 py-2 px-2 text-xs font-extrabold text-rose-800"><span>🗺️</span><span>الموقع</span></button>
+            <button type="button" data-share-emerg="${D.escHtml(e.id)}" class="inline-flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 py-2 px-2.5 text-xs font-extrabold text-slate-700"><span>📤</span><span>مشاركة</span></button>
+            ${canClaim ? `<button type="button" data-claim-emerg="${D.escHtml(e.id)}" class="flex-1 inline-flex items-center justify-center gap-1 rounded-xl bg-[#0D6857] py-2 px-2 text-xs font-extrabold text-white"><span>✅</span><span>استلام</span></button>` : ''}
           </div>
         </article>
       `;
@@ -848,12 +846,20 @@
     });
   }
 
-  function buildShareText(o) {
+  function buildShareText(item, kind = 'offer') {
     const base = 'https://compstory2-lang.github.io/kouthbayek/';
-    const url = `${base}?offer=${encodeURIComponent(o.id)}`;
+    if (kind === 'emergency') {
+      const url = `${base}?tab=emergency`;
+      const descBrief = String(item.desc || '').slice(0, 120);
+      return {
+        url,
+        text: `⚡ طلب صيانة عاجلة: ${item.type}\n📍 ${item.gov}${descBrief ? ' — ' + descBrief : ''}\nعبر تطبيق خوذ بايك: ${url}`
+      };
+    }
+    const url = `${base}?offer=${encodeURIComponent(item.id)}`;
     return {
       url,
-      text: `🧺 ${o.title}\n💰 السعر: ${o.price} د.ت — 📍 ${o.gov}\n📞 ${D.cleanPhone(o.phone)}\nشاهد العرض مباشرة على خوذ بايك: ${url}`
+      text: `🧺 ${item.title}\n💰 السعر: ${item.price} د.ت — 📍 ${item.gov}\n📞 ${D.cleanPhone(item.phone)}\nشاهد العرض مباشرة على خوذ بايك: ${url}`
     };
   }
 
@@ -1028,7 +1034,7 @@
   // Share Modal Buttons (Facebook, WhatsApp, Copy, Native)
   $('shareFbBtn').addEventListener('click', () => {
     if (!state.shareTarget) return;
-    const { url, text } = buildShareText(state.shareTarget);
+    const { url, text } = buildShareText(state.shareTarget, state.shareKind);
     const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`;
     window.open(fbUrl, '_blank', 'noopener');
     closeModal('shareModal');
@@ -1036,14 +1042,14 @@
 
   $('shareWaBtn').addEventListener('click', () => {
     if (!state.shareTarget) return;
-    const { text } = buildShareText(state.shareTarget);
+    const { text } = buildShareText(state.shareTarget, state.shareKind);
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
     closeModal('shareModal');
   });
 
   $('shareCopyBtn').addEventListener('click', async () => {
     if (!state.shareTarget) return;
-    const { text } = buildShareText(state.shareTarget);
+    const { text } = buildShareText(state.shareTarget, state.shareKind);
     try {
       await navigator.clipboard.writeText(text);
       showToast('📋 تم نسخ نص الإعلان والرابط — الصقه في فيسبوك أو ماسنجر!');
@@ -1055,7 +1061,7 @@
 
   $('shareNativeBtn').addEventListener('click', async () => {
     if (!state.shareTarget) return;
-    const { url, text } = buildShareText(state.shareTarget);
+    const { url, text } = buildShareText(state.shareTarget, state.shareKind);
     if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Share) {
       try {
         await window.Capacitor.Plugins.Share.share({ title: state.shareTarget.title, text, url });
@@ -1198,11 +1204,23 @@
       return;
     }
 
+    const shareEmBtn = e.target.closest('[data-share-emerg]');
+    if (shareEmBtn) {
+      const em = state.emergencies.find((x) => x.id === shareEmBtn.dataset.shareEmerg);
+      if (!em) return;
+      state.shareTarget = em;
+      state.shareKind = 'emergency';
+      $('shareOfferTitle').textContent = `⚡ ${em.type} — ${em.gov}`;
+      openModal('shareModal');
+      return;
+    }
+
     const shareBtn = e.target.closest('[data-share-offer]');
     if (shareBtn) {
       const o = state.offers.find((x) => x.id === shareBtn.dataset.shareOffer);
       if (!o) return;
       state.shareTarget = o;
+      state.shareKind = 'offer';
       $('shareOfferTitle').textContent = `${o.title} — ${o.price} د.ت`;
       openModal('shareModal');
       return;
@@ -1665,6 +1683,10 @@
   async function handleSharedOfferLink() {
     try {
       const params = new URLSearchParams(window.location.search);
+      if (params.get('tab') === 'emergency') {
+        switchTab('emergency');
+        return;
+      }
       const oid = params.get('offer');
       if (!oid) return;
       state.sharedOfferId = oid;
