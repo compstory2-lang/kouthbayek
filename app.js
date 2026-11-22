@@ -853,13 +853,13 @@
       const descBrief = String(item.desc || '').slice(0, 120);
       return {
         url,
-        text: `⚡ طلب صيانة عاجلة: ${item.type}\n📍 ${item.gov}${descBrief ? ' — ' + descBrief : ''}\nعبر تطبيق خوذ بايك: ${url}`
+        text: `⚡ طلب صيانة عاجلة: ${item.type}\n📍 ${item.gov}${descBrief ? ' — ' + descBrief : ''}\n📲 افتح أو نزّل تطبيق خوذ بايك: ${url}`
       };
     }
     const url = `${base}?offer=${encodeURIComponent(item.id)}`;
     return {
       url,
-      text: `🧺 ${item.title}\n💰 السعر: ${item.price} د.ت — 📍 ${item.gov}\n📞 ${D.cleanPhone(item.phone)}\nشاهد العرض مباشرة على خوذ بايك: ${url}`
+      text: `🧺 ${item.title}\n💰 السعر: ${item.price} د.ت — 📍 ${item.gov}\n📞 ${D.cleanPhone(item.phone)}\n📲 افتح أو نزّل تطبيق خوذ بايك: ${url}`
     };
   }
 
@@ -1353,6 +1353,45 @@
 
     const closeBtn = e.target.closest('[data-close-modal]');
     if (closeBtn) closeModal(closeBtn.dataset.closeModal);
+  });
+
+    let deferredInstallPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+  });
+
+  $('openInstallModalBtn').addEventListener('click', () => openModal('installAppModal'));
+
+  $('pwaInstallNowBtn').addEventListener('click', async () => {
+    if (deferredInstallPrompt) {
+      deferredInstallPrompt.prompt();
+      try {
+        const choice = await deferredInstallPrompt.userChoice;
+        if (choice && choice.outcome === 'accepted') {
+          showToast('🎉 جاري تثبيت تطبيق خوذ بايك على شاشتك الرئيسية!');
+          closeModal('installAppModal');
+        }
+      } catch (_) {}
+      deferredInstallPrompt = null;
+      return;
+    }
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if (isIos) {
+      showToast('🍏 في Safari: اضغط زر المشاركة ⬆️ بالأسفل ثم «إضافة إلى الشاشة الرئيسية».');
+    } else {
+      showToast('🌐 افتح الرابط في Chrome واضغط القائمة (⋮) ثم «تثبيت التطبيق / الإضافة إلى الشاشة الرئيسية».');
+    }
+  });
+
+  $('copyAppLinkBtn').addEventListener('click', async () => {
+    const appUrl = 'https://compstory2-lang.github.io/kouthbayek/';
+    try {
+      await navigator.clipboard.writeText(appUrl);
+      showToast('📋 تم نسخ رابط التطبيق — افتحه في Chrome لتثبيته فوراً!');
+    } catch (_) {
+      showToast('🔗 الرابط: ' + appUrl);
+    }
   });
 
   $('openEmergencyModalBtn').addEventListener('click', () => openModal('emergencyModal'));
