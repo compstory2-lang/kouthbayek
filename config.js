@@ -1,4 +1,4 @@
-// خوذ بايك — الإعدادات والولايات التونسية الـ 24 والفئات ودليل الأسعار والرقابة الذاتية (v1.4-TN)
+// خوذ بايك — الإعدادات والولايات التونسية الـ 24 والفئات ودليل الأسعار والرقابة الذاتية (v1.5-TN)
 window.KB_CONFIG = (() => {
   'use strict';
 
@@ -7,8 +7,8 @@ window.KB_CONFIG = (() => {
     anonKey: 'sb_publishable_oW2H_1p5MCX82_bJOObyfA_AplDj2bk'
   };
 
-  const VERSION = 'v1.4-TN';
-  const OFFER_TTL_HOURS = 72; // 3 أيام
+  const VERSION = 'v1.5-TN';
+  const OFFER_TTL_HOURS = 24; // كل عروض البيع والشراء مدتها القصوى 24 ساعة ثم تُحذف تلقائياً
   const STORAGE_BUCKET = 'offer-images';
   const HR = 3600 * 1000;
 
@@ -39,7 +39,7 @@ window.KB_CONFIG = (() => {
     { id: 'Kebili', ar: 'قبلي', lat: 33.7044, lng: 8.9690 }
   ];
 
-  // فئات السوق بالترتيب اليومي الجديد: الخضر والغلال أولاً ثم اللحوم ثم الحوت ثم الألبان ثم العولة ثم البقية
+  // فئات السوق بالترتيب اليومي: الخضر والغلال أولاً ثم اللحوم ثم الحوت ثم الألبان ثم العولة ثم البقية
   const MARKET_CATS = [
     { id: 'all', label: 'كل العروض', icon: '✨' },
     { id: 'produce', label: 'خضر وغلال', icon: '🥬' },
@@ -65,7 +65,6 @@ window.KB_CONFIG = (() => {
     { id: 'pets', label: 'حيوانات أليفة وطيور', icon: '🐦' }
   ];
 
-  // مجموعات وتخصصات الحرفيين
   const CRAFT_GROUPS = [
     { id: 'all', label: 'الكل', icon: '' },
     { id: 'home', label: 'صيانة المنزل', icon: '🏠' },
@@ -99,7 +98,6 @@ window.KB_CONFIG = (() => {
     { id: 'auto_elec', label: 'كهربائي سيارات', icon: '🔋', group: 'auto' }
   ];
 
-  // دليل أسعار استرشادي تقريبي للمهن في تونس (على غرار مرصد Afous — يد عاملة دون قطع الغيار)
   const CRAFT_PRICE_GUIDE = {
     plumbing: [
       { task: 'فتح مجاري / بالوعة مسدودة', range: '40 – 80 د.ت' },
@@ -195,7 +193,6 @@ window.KB_CONFIG = (() => {
     { id: 'مساعدة عاجلة', label: 'مساعدة عاجلة', icon: '🆘' }
   ];
 
-  // قواعد الرقابة الذاتية: منع الخمور والممنوعات والألفاظ السوقية
   const MODERATION_RULES = {
     alcohol: [
       'خمر', 'خمور', 'بيرة', 'ببيره', 'شراب كحولي', 'كحول للبيع', 'ويسكي', 'فودكا', 'نبيذ', 'شامبانيا', 'بوخة', 'سيلتيا', 'لاقي مخمر',
@@ -212,7 +209,6 @@ window.KB_CONFIG = (() => {
     ]
   };
 
-  // لا بيانات وهمية في الإنتاج (تُجلب البيانات الحقيقية مباشرة من Supabase)
   const SEED_OFFERS = [];
   const SEED_CRAFTS = [];
   const SEED_EMERGENCIES = [];

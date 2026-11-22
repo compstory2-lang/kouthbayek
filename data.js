@@ -1,4 +1,4 @@
-// خوذ بايك — طبقة البيانات والأمان والرقابة الذاتية وRealtime (v1.4-TN)
+// خوذ بايك — طبقة البيانات والأمان والبث الحي وتعديل السعر السريع وRealtime (v1.5-TN)
 window.KB_DATA = (() => {
   'use strict';
 
@@ -51,7 +51,6 @@ window.KB_DATA = (() => {
       .replace(/'/g, '&#39;');
   }
 
-  // تطبيع النص العربي: إزالة التشكيل والمد وتوحيد الألف والتاء والياء لبحث دقيق
   function normalizeAr(str) {
     return String(str == null ? '' : str)
       .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
@@ -62,7 +61,6 @@ window.KB_DATA = (() => {
       .trim();
   }
 
-  // فحص الرقابة الذاتية: منع الخمور والممنوعات والألفاظ السوقية وملاءمة النص
   function checkContentModeration(text) {
     const norm = normalizeAr(text);
     if (!norm || norm.length < 3) {
@@ -127,7 +125,8 @@ window.KB_DATA = (() => {
     const hrs = totalHrs % 24;
     const mins = Math.floor((diff % 3600000) / 60000);
     if (days >= 1) return `متبقي ${days}ي ${hrs}س`;
-    return `متبقي ${hrs}س ${mins}د`;
+    if (hrs >= 1) return `متبقي ${hrs}س ${mins}د`;
+    return `متبقي ${Math.max(1, mins)} دق`;
   }
 
   function formatAgo(ts) {
@@ -146,7 +145,6 @@ window.KB_DATA = (() => {
     return C.CRAFT_CATS.find((c) => c.id === id) || C.CRAFT_CATS[0];
   }
 
-  // ==================== ضغط فائق للصور (< 55 KB) بدون حفظ base64 في القاعدة ====================
   function compressImageFile(file, maxDim = 680, maxBytes = 55000) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -278,7 +276,6 @@ window.KB_DATA = (() => {
 
   async function saveCloudAccount(acc) {
     if (!sbClient || !acc.userId) return { ok: false, error: 'غير متصل' };
-    // لا نرسل trial_ends_at من العميل — الخادم يفرض الـ 60 يوماً تلقائياً
     const { data, error } = await sbClient.from('kb_accounts').upsert({
       user_id: acc.userId,
       email: acc.email || '',
@@ -314,7 +311,7 @@ window.KB_DATA = (() => {
     lsRemove(STORE_KEYS.claimed);
   }
 
-  // ==================== جلب ذكي مفلتر حسب الولاية ====================
+  // ==================== SYNC ====================
   const syncCache = { key: '', at: 0 };
 
   async function syncFromSupabase(state, force = false) {
@@ -329,7 +326,7 @@ window.KB_DATA = (() => {
       const offerLimit = state.radius === 'gov' ? 80 : 150;
 
       let ofQ = sbClient.from('kb_offers')
-        .select('id,title,price,category,governorate,seller_name,phone,description,image_url,status,user_id,lat,lng,created_at,expires_at')
+        .select('id,title,price,prev_price,category,governorate,seller_name,phone,description,image_url,status,user_id,lat,lng,live_location,live_updated_at,created_at,expires_at')
         .eq('status', 'active')
         .gte('expires_at', nowIso)
         .order('created_at', { ascending: false })
@@ -357,14 +354,16 @@ window.KB_DATA = (() => {
       syncCache.key = scopeKey;
       syncCache.at = Date.now();
 
-      // نستبدل القائمة حتى لو كانت فارغة لتفادي بقاء بيانات قديمة محلياً
       if (!ofRes.error && Array.isArray(ofRes.data)) {
         state.offers = ofRes.data.map((r) => ({
-          id: r.id, title: r.title, price: Number(r.price), cat: r.category,
-          gov: r.governorate, seller: r.seller_name, phone: r.phone,
+          id: r.id, title: r.title, price: Number(r.price),
+          prevPrice: r.prev_price != null ? Number(r.prev_price) : null,
+          cat: r.category, gov: r.governorate, seller: r.seller_name, phone: r.phone,
           desc: r.description || '', imageUrl: r.image_url || '',
           status: r.status || 'active', userId: r.user_id || '',
           lat: Number(r.lat), lng: Number(r.lng),
+          liveLocation: Boolean(r.live_location),
+          liveUpdatedAt: r.live_updated_at ? Date.parse(r.live_updated_at) : null,
           createdAt: Date.parse(r.created_at) || Date.now(),
           expiresAt: Date.parse(r.expires_at) || (Date.now() + C.OFFER_TTL_HOURS * C.HR)
         }));
@@ -399,10 +398,12 @@ window.KB_DATA = (() => {
     if (!sbClient) return { ok: false, id: o.id, error: 'غير متصل بالخادم' };
     try {
       const { data, error } = await sbClient.from('kb_offers').insert({
-        title: o.title, price: o.price, category: o.cat, governorate: o.gov,
+        title: o.title, price: o.price, prev_price: null, category: o.cat, governorate: o.gov,
         seller_name: o.seller, phone: o.phone, description: o.desc || '',
         image_url: o.imageUrl || null, status: 'active',
         user_id: o.userId || null, lat: o.lat, lng: o.lng,
+        live_location: Boolean(o.liveLocation),
+        live_updated_at: o.liveLocation ? new Date().toISOString() : null,
         expires_at: new Date(o.expiresAt).toISOString()
       }).select('id').single();
       syncCache.at = 0;
@@ -416,7 +417,7 @@ window.KB_DATA = (() => {
     if (!sbClient || !userId) return { ok: false, error: 'يجب تسجيل الدخول' };
     try {
       const { error } = await sbClient.from('kb_offers')
-        .update({ status: 'sold' })
+        .update({ status: 'sold', live_location: false })
         .eq('id', offerId)
         .eq('user_id', userId);
       syncCache.at = 0;
@@ -426,10 +427,43 @@ window.KB_DATA = (() => {
     }
   }
 
+  // تحديث سريع للسعر مع حفظ السعر السابق لإظهار شارة «تخفيض الآن 🔥» عند النزول
+  async function updateOfferPrice(offerId, userId, newPrice, oldPrice) {
+    if (!sbClient || !userId) return { ok: false, error: 'يجب تسجيل الدخول' };
+    try {
+      const prevPrice = newPrice < oldPrice ? oldPrice : null;
+      const { error } = await sbClient.from('kb_offers')
+        .update({ price: newPrice, prev_price: prevPrice })
+        .eq('id', offerId)
+        .eq('user_id', userId);
+      syncCache.at = 0;
+      return { ok: !error, prevPrice, error: error ? error.message : '' };
+    } catch (err) {
+      return { ok: false, prevPrice: null, error: (err && err.message) || 'تعذر تعديل السعر' };
+    }
+  }
+
+  // زر «أنا هنا الآن»: تحديث موقع البائع أو إيقاف البث
+  async function updateOfferLiveLocation(offerId, userId, lat, lng, isLive) {
+    if (!sbClient || !userId) return { ok: false, error: 'يجب تسجيل الدخول' };
+    try {
+      const patch = isLive
+        ? { lat, lng, live_location: true, live_updated_at: new Date().toISOString() }
+        : { live_location: false };
+      const { error } = await sbClient.from('kb_offers')
+        .update(patch)
+        .eq('id', offerId)
+        .eq('user_id', userId);
+      syncCache.at = 0;
+      return { ok: !error, error: error ? error.message : '' };
+    } catch (err) {
+      return { ok: false, error: (err && err.message) || 'تعذر تحديث الموقع' };
+    }
+  }
+
   async function pushCraft(c) {
     if (!sbClient) return { ok: false, error: 'غير متصل بالخادم' };
     try {
-      // لا نرسل rating ولا reviews_count — الخادم يضبطهما تلقائياً
       const { data, error } = await sbClient.from('kb_craftsmen').insert({
         name: c.name, specialty: c.spec, governorate: c.gov, area: c.area,
         phone: c.phone, description: c.note,
@@ -509,6 +543,22 @@ window.KB_DATA = (() => {
     }
   }
 
+  // إعادة فتح البلاغ بيد صاحبه في حال عدم الاتفاق على السعر
+  async function reopenEmergencyOwner(emergId, userId) {
+    if (!sbClient || !userId) return { ok: false, error: 'يجب تسجيل الدخول' };
+    try {
+      const { error } = await sbClient
+        .from('kb_emergencies')
+        .update({ status: 'open', claimed_by: null, claimed_at: null, craftsman_status: 'pending' })
+        .eq('id', emergId)
+        .eq('user_id', userId);
+      syncCache.at = 0;
+      return { ok: !error, error: error ? error.message : '' };
+    } catch (err) {
+      return { ok: false, error: (err && err.message) || 'تعذر إعادة فتح البلاغ' };
+    }
+  }
+
   async function submitReport(targetType, targetId, reason, reporterId) {
     if (!sbClient) return { ok: false, error: 'غير متصل بالخادم' };
     try {
@@ -524,7 +574,6 @@ window.KB_DATA = (() => {
     }
   }
 
-  // اشتراك Realtime للطوارئ لتحديث القائمة فورياً داخل التطبيق
   let realtimeChannel = null;
   function subscribeEmergencies(onChange) {
     if (!sbClient || realtimeChannel) return;
@@ -539,7 +588,6 @@ window.KB_DATA = (() => {
     } catch (_) {}
   }
 
-  // تسجيل Service Worker على الويب فقط (وليس داخل Capacitor APK)
   if (!isCapNative() && 'serviceWorker' in navigator && window.location.protocol !== 'file:') {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('./sw.js').catch(() => {});
@@ -555,8 +603,8 @@ window.KB_DATA = (() => {
     formatRemaining, formatAgo, getMarketCatInfo, getCraftCatInfo,
     compressImageFile, uploadOfferImage,
     signInWithGoogle, getAuthUser, fetchCloudAccount, saveCloudAccount, signOutGoogle, deleteUserAccountAndData,
-    syncFromSupabase, pushOffer, markOfferSold, pushCraft,
-    pushEmergency, claimEmergencyAtomic, markEmergencyCraftsmanStatus, confirmEmergencyOwner,
-    submitReport, subscribeEmergencies
+    syncFromSupabase, pushOffer, markOfferSold, updateOfferPrice, updateOfferLiveLocation,
+    pushCraft, pushEmergency, claimEmergencyAtomic, markEmergencyCraftsmanStatus,
+    confirmEmergencyOwner, reopenEmergencyOwner, submitReport, subscribeEmergencies
   };
 })();
