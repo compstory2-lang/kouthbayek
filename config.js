@@ -5,6 +5,9 @@ window.KB_CONFIG = (() => {
   const HR = 3600000; // ساعة واحدة بالملي ثانية
   const VERSION = 'v1.5-TN';
   const OFFER_TTL_HOURS = 24;
+  const NON_FOOD_TTL_HOURS = 72;
+  const NON_FOOD_CATS = ['livestock', 'vehicles', 'electronics', 'furniture', 'construction', 'other'];
+  const isNonFoodCat = (catId) => NON_FOOD_CATS.includes(catId);
   const STORAGE_BUCKET = 'offer-images';
 
   const SUPABASE_URL = 'https://tlgfwkbsgaiyylhhmywv.supabase.co';
@@ -173,6 +176,9 @@ window.KB_CONFIG = (() => {
     HR,
     VERSION,
     OFFER_TTL_HOURS,
+    NON_FOOD_TTL_HOURS,
+    NON_FOOD_CATS,
+    isNonFoodCat,
     STORAGE_BUCKET,
     SUPABASE,
     SUPABASE_URL,
