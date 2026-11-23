@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0D6857" />
+  <title>خوذ بايك — دليل الحرفيين • سوق الحومة • صيانة عاجلة</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+
+  <!-- Top Teal-Green Rounded Header (Design 6: Glovo / Tayara Pro Compact) -->
+  <header class="kb-header sticky top-0 z-30 shadow-lg">
+    <div class="mx-auto max-w-2xl px-3.5 pt-2.5 pb-3 space-y-2">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2 min-w-0">
+          <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 border border-white/25 text-lg shadow-sm">🧺</div>
+          <div class="min-w-0 flex items-center gap-1.5">
+            <h1 class="text-base sm:text-lg font-black tracking-tight text-white leading-none">خوذ بايك</h1>
+            <span class="shrink-0 rounded-full bg-emerald-300/20 border border-emerald-200/30 px-2 py-0.5 text-[10px] font-black text-emerald-50 whitespace-nowrap">24 ولاية</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button id="openInstallModalBtn" type="button" class="inline-flex items-center gap-1 rounded-full bg-amber-400 hover:bg-amber-300 text-[#132A23] px-2.5 py-1 text-[11px] font-black shadow-sm transition whitespace-nowrap">
+            <span>📲</span><span>تنزيل</span>
+          </button>
+          <button id="openTermsBtn" type="button" class="inline-flex items-center gap-1 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 px-2.5 py-1 text-[11px] font-extrabold text-white transition whitespace-nowrap">
+            <span>⚖️</span><span>الشروط</span>
+          </button>
+          <a href="./privacy.html" title="سياسة الخصوصية" class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/15 hover:bg-white/25 border border-white/20 text-xs transition">🔒</a>
+        </div>
+      </div>
+
+      <!-- Compact Location & Scope Bar -->
+      <div class="rounded-2xl bg-black/15 border border-white/15 p-1.5 space-y-1.5">
+        <div class="grid grid-cols-2 gap-1.5">
+          <div>
+            <label for="govSelect" class="sr-only">اختر الولاية</label>
+            <select id="govSelect" class="w-full rounded-xl bg-white px-2.5 py-1.5 text-xs font-black text-[#132A23] shadow-sm outline-none"></select>
+          </div>
+          <div>
+            <label for="radiusSelect" class="sr-only">نطاق البحث</label>
+            <select id="radiusSelect" class="w-full rounded-xl bg-white px-2.5 py-1.5 text-xs font-black text-[#132A23] shadow-sm outline-none">
+              <option value="gov">📍 في ولايتي فقط</option>
+              <option value="15">ضمن 15 كم</option>
+              <option value="50">ضمن 50 كم</option>
+              <option value="100">ضمن 100 كم</option>
+              <option value="all">كل تونس</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex items-center justify-between gap-2 px-0.5">
+          <button id="geoBtn" type="button" class="inline-flex items-center gap-1 rounded-full bg-amber-400 hover:bg-amber-300 active:scale-95 px-3 py-1 text-[11px] font-black text-[#132A23] shadow-sm transition whitespace-nowrap">
+            <span>🎯</span><span>تحديد موقعي GPS</span>
+          </button>
+          <span id="syncBadge" class="inline-flex items-center gap-1 rounded-full bg-white/12 px-2.5 py-0.5 text-[10px] font-bold text-emerald-50 whitespace-nowrap">
+            <span class="h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
+            <span>متصل بـ Supabase</span>
+          </span>
+        </div>
+      </div>
+      <p id="locStatusTxt" class="sr-only">الولاية: قابس</p>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-2xl px-3.5 pt-3.5 pb-6 space-y-4">
+
+    <!-- ==================== TAB 1: MARKET (خوذ بايك) ==================== -->
+    <section id="tab-market" class="tab-panel space-y-3.5">
+      <!-- Search + Add Offer -->
+      <div class="flex items-center gap-2">
+        <div class="relative flex-1">
+          <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-emerald-800">🔍</span>
+          <input id="marketSearch" type="search" autocomplete="off" placeholder="ابحث عن خضر، لحم، سردينة، جبن، سيارة..." class="w-full rounded-2xl border border-[#DCE4E1] bg-white py-2.5 pr-9 pl-3 text-xs sm:text-sm font-bold text-[#132A23] placeholder:text-slate-400 outline-none focus:border-[#0D6857]" />
+        </div>
+        <button id="openOfferModalBtn" type="button" class="shrink-0 rounded-2xl bg-[#0D6857] hover:bg-[#094D40] active:scale-95 px-3.5 py-2.5 text-xs sm:text-sm font-black text-white shadow-sm transition">+ أضف عرضاً</button>
+      </div>
+
+      <!-- Top 4 Circular Quick-Action Orbs (Design 6: Glovo / Tayara Pro) -->
+      <div class="grid grid-cols-4 gap-2 text-center pt-0.5">
+        <button type="button" data-quick-cat="produce" class="kb-orb-btn flex flex-col items-center gap-1">
+          <div class="kb-orb bg-emerald-50 border border-emerald-200">🥬</div>
+          <span class="text-[11px] font-black text-[#132A23]">خضر</span>
+        </button>
+        <button type="button" data-quick-cat="fish" class="kb-orb-btn flex flex-col items-center gap-1">
+          <div class="kb-orb bg-sky-50 border border-sky-200">🐟</div>
+          <span class="text-[11px] font-black text-[#132A23]">حوت</span>
+        </button>
+        <button type="button" data-tab="crafts" class="kb-orb-btn flex flex-col items-center gap-1">
+          <div class="kb-orb bg-amber-50 border border-amber-200">🛠️</div>
+          <span class="text-[11px] font-black text-[#132A23]">حرفي</span>
+        </button>
+        <button type="button" data-tab="emergency" class="kb-orb-btn flex flex-col items-center gap-1">
+          <div class="kb-orb bg-rose-50 border border-rose-200">⚡</div>
+          <span class="text-[11px] font-black text-rose-800">عاجل</span>
+        </button>
+      </div>
+
+      <!-- Market View Toggle (All / Categories / Favorites / Filters) -->
+      <div class="flex flex-wrap items-center justify-between gap-1.5">
+        <div class="flex flex-wrap items-center gap-1.5">
+          <button id="marketShowAllBtn" type="button" class="rounded-full bg-[#0D6857] px-3 py-1 text-xs font-extrabold text-white">✨ الكل (<span id="statOffersCount">0</span>)</button>
+          <button id="marketToggleCatsBtn" type="button" class="rounded-full border border-[#D4DFDB] bg-white px-3 py-1 text-xs font-extrabold text-[#132A23]">📂 الفئات</button>
+          <button id="marketFavsBtn" type="button" class="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-extrabold text-amber-950">⭐ المفضّلة (<span id="favCatsCount">0</span>)</button>
+          <button id="marketFiltersToggleBtn" type="button" class="rounded-full border border-[#D4DFDB] bg-white px-3 py-1 text-xs font-extrabold text-[#132A23]">🎛️ فلاتر</button>
+        </div>
+        <span id="marketResultCount" class="text-[11px] font-extrabold text-emerald-800">الأقرب أولاً</span>
+      </div>
+
+      <!-- Favorites Category Subscription Panel -->
+      <div id="favCatsPanel" class="hidden rounded-3xl border border-amber-300 bg-amber-50/70 p-3.5 space-y-2.5 shadow-sm">
+        <div class="flex items-center justify-between gap-2">
+          <p class="text-xs font-black text-amber-950">⭐ اختر الفئات التي تتابعها لتظهر إعلاناتها أولاً:</p>
+          <button id="closeFavPanelBtn" type="button" class="rounded-lg bg-white border border-amber-200 px-2 py-0.5 text-[11px] font-extrabold text-amber-900">تم</button>
+        </div>
+        <div id="favCatsChips" class="flex flex-wrap gap-1.5"></div>
+      </div>
+
+      <!-- Market Advanced Filters (Price, Sort, & Dynamic Vehicle Filters) -->
+      <div id="marketFiltersBox" class="hidden rounded-3xl border border-[#DCE4E1] bg-white p-3.5 shadow-sm space-y-2.5">
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label for="marketSortSelect" class="block text-[10px] font-extrabold text-slate-600 mb-1">الترتيب</label>
+            <select id="marketSortSelect" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-2 py-1.5 text-xs font-bold outline-none">
+              <option value="nearest">📍 الأقرب أولاً</option>
+              <option value="newest">🕒 الأحدث</option>
+              <option value="cheapest">💰 الأرخص</option>
+            </select>
+          </div>
+          <div>
+            <label for="filterMinPrice" class="block text-[10px] font-extrabold text-slate-600 mb-1">السعر من (د.ت)</label>
+            <input id="filterMinPrice" type="number" min="0" step="0.5" placeholder="0" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-2 py-1.5 text-xs font-bold outline-none" dir="ltr" />
+          </div>
+          <div>
+            <label for="filterMaxPrice" class="block text-[10px] font-extrabold text-slate-600 mb-1">السعر إلى (د.ت)</label>
+            <input id="filterMaxPrice" type="number" min="0" step="0.5" placeholder="الكل" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-2 py-1.5 text-xs font-bold outline-none" dir="ltr" />
+          </div>
+        </div>
+        <div id="vehicleFilterRow" class="hidden grid grid-cols-3 gap-2 pt-1.5 border-t border-slate-100">
+          <input id="filterVehBrand" type="text" placeholder="الماركة (Clio..)" class="rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-2 py-1.5 text-xs font-bold outline-none" />
+          <input id="filterVehYear" type="number" min="1980" max="2027" placeholder="السنة من (2015)" class="rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-2 py-1.5 text-xs font-bold outline-none" dir="ltr" />
+          <input id="filterVehKm" type="number" min="0" placeholder="أقصى كم (150000)" class="rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-2 py-1.5 text-xs font-bold outline-none" dir="ltr" />
+        </div>
+        <div class="flex justify-end">
+          <button id="clearMarketFiltersBtn" type="button" class="text-[11px] font-extrabold text-rose-700 hover:underline">مسح الفلاتر</button>
+        </div>
+      </div>
+
+      <!-- 2-Column Market Category Grid -->
+      <div id="marketCatGridWrap" class="hidden space-y-2">
+        <div id="marketCatBar" class="grid grid-cols-2 gap-2.5"></div>
+      </div>
+
+      <!-- Active Category Filter Pill -->
+      <div id="marketActiveCatChip" class="hidden flex items-center justify-between rounded-2xl bg-amber-50 border border-amber-200 px-3 py-2 text-xs font-black text-amber-950">
+        <span id="marketActiveCatLbl">الفئة</span>
+        <button id="marketClearCatBtn" type="button" class="rounded-lg bg-white px-2.5 py-1 text-[11px] font-extrabold text-emerald-900 border border-amber-200">← كل العروض</button>
+      </div>
+
+      <!-- Market Offers Feed -->
+      <div id="marketList" class="space-y-3.5"></div>
+    </section>
+
+    <!-- ==================== TAB 2: CRAFTSMEN (الحرفيين) ==================== -->
+    <section id="tab-crafts" class="tab-panel hidden space-y-3.5">
+      <div class="flex items-center gap-2">
+        <div class="relative flex-1">
+          <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-emerald-800">🔍</span>
+          <input id="craftSearch" type="search" autocomplete="off" placeholder="ابحث عن حرفي (فريغوريست، سباك، كهربائي، ميكانيكي...)" class="w-full rounded-2xl border border-[#DCE4E1] bg-white py-2.5 pr-9 pl-3 text-xs sm:text-sm font-bold text-[#132A23] placeholder:text-slate-400 outline-none focus:border-[#0D6857]" />
+        </div>
+        <button id="openCraftModalBtn" type="button" class="shrink-0 rounded-2xl bg-[#0D6857] hover:bg-[#094D40] active:scale-95 px-3.5 py-2.5 text-xs sm:text-sm font-black text-white shadow-sm transition">+ أضف مهنتك</button>
+      </div>
+
+      <p class="text-xs font-bold text-slate-600">اختر الاختصاص لعرض أقرب أصحاب الصنعة ودليل الأسعار التقريبي</p>
+
+      <div id="craftGroupBar" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1"></div>
+      <div id="craftCatBar" class="grid grid-cols-2 gap-2.5"></div>
+      <div id="craftPriceGuideBox" class="hidden rounded-3xl border border-amber-200 bg-[#FFF9EC] p-3.5 shadow-sm space-y-2"></div>
+
+      <div class="flex items-center justify-between pt-1">
+        <h2 id="craftListTitle" class="text-sm font-black text-[#132A23]">🛠️ أقرب الحرفيين المتاحين</h2>
+        <span id="craftResultCount" class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-extrabold text-emerald-900">0 حرفي</span>
+      </div>
+      <div id="craftList" class="space-y-3"></div>
+    </section>
+
+    <!-- ==================== TAB 3: EMERGENCIES (صيانة عاجلة) ==================== -->
+    <section id="tab-emergency" class="tab-panel hidden space-y-3.5">
+      <div class="rounded-3xl bg-gradient-to-l from-[#B91C1C] to-[#DC2626] p-4 text-white shadow-md space-y-2.5">
+        <div class="flex items-center justify-between gap-2">
+          <h2 id="emergBannerTitle" class="text-base sm:text-lg font-black">⚡ صيانة عاجلة — قابس</h2>
+          <span class="shrink-0 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-black"><span id="openEmergencyCounter">0</span> مفتوح</span>
+        </div>
+        <p class="text-xs font-semibold text-rose-100 leading-relaxed">
+          عندك عطل مستعجل في الدار أو الكرهبة؟ حط طلب الصيانة العاجلة مع موقعك الدقيق (وصورة اختيارية)، وأي حرفي قريب يستلمه ويتوجّه إليك عبر Google Maps. إذا لم تتفقا على السعر يمكنك إعادة فتح البلاغ لحرفي آخر بضغطة واحدة.
+        </p>
+        <button id="openEmergencyModalBtn" type="button" class="w-full rounded-2xl bg-white hover:bg-rose-50 active:scale-[0.99] py-3 text-sm font-black text-[#B91C1C] shadow-sm transition">+ أرسل طلب صيانة عاجلة الآن</button>
+      </div>
+
+      <!-- Owner's Active Emergencies (Confirm Completion OR Reopen if price disagreed) -->
+      <div id="myOwnedEmergBox" class="hidden rounded-2xl border-2 border-amber-300 bg-amber-50/70 p-3.5 shadow-sm space-y-2">
+        <h3 class="text-xs font-black text-amber-950">📋 طلبات الصيانة العاجلة النشطة</h3>
+        <div id="myOwnedEmergList" class="space-y-2"></div>
+      </div>
+
+      <!-- Claimed Emergencies (Private to Claimer — CareGuard Style) -->
+      <div id="myClaimedBox" class="hidden rounded-2xl border border-emerald-200 bg-white p-3.5 shadow-sm space-y-2">
+        <h3 class="text-xs font-black text-emerald-900">📌 طلبات الصيانة التي استلمتها (مخفية الآن عن العموم)</h3>
+        <div id="myClaimedList" class="space-y-2"></div>
+      </div>
+
+      <div id="emergCatBar" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1"></div>
+      <div id="emergencyList" class="space-y-2.5"></div>
+    </section>
+
+    <!-- ==================== TAB 4: MAP (الخريطة) ==================== -->
+    <section id="tab-map" class="tab-panel hidden space-y-3">
+      <div class="rounded-2xl border border-[#E4EAE8] bg-white p-3 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h2 class="text-sm font-black text-[#132A23]">🗺️ الخريطة التفاعلية</h2>
+          <div class="flex flex-wrap items-center gap-1.5 text-[11px] font-extrabold">
+            <button type="button" data-map-layer="market" class="inline-flex items-center gap-1 rounded-full border border-[#0D6857] bg-[#0D6857] px-2.5 py-1 text-white transition"><span>🟢</span><span>العروض</span></button>
+            <button type="button" data-map-layer="crafts" class="inline-flex items-center gap-1 rounded-full border border-blue-700 bg-blue-700 px-2.5 py-1 text-white transition"><span>🔵</span><span>الحرفيون</span></button>
+            <button type="button" data-map-layer="emergency" class="inline-flex items-center gap-1 rounded-full border border-rose-600 bg-rose-600 px-2.5 py-1 text-white transition"><span>🟠</span><span>صيانة عاجلة</span></button>
+          </div>
+        </div>
+      </div>
+      <div class="overflow-hidden rounded-2xl border border-[#DCE4E1] bg-white shadow-sm">
+        <div id="mainMap" style="height: 390px; width: 100%;"></div>
+      </div>
+      <div id="mapDetailCard" class="rounded-2xl border border-[#E4EAE8] bg-white p-3.5 shadow-sm">
+        <p class="text-center text-xs font-bold text-slate-500">اضغط على أي علامة على الخريطة لعرض التفاصيل والصورة والتواصل المباشر.</p>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 5: ACCOUNT (حسابي) ==================== -->
+    <section id="tab-account" class="tab-panel hidden space-y-3.5">
+      <div class="space-y-1 px-1">
+        <h2 class="text-lg font-black text-[#132A23]">👤 فضاء الحرفيين وأصحاب النصب والمحلات</h2>
+        <p class="text-xs font-semibold text-slate-600 leading-relaxed">
+          التصفح مفتوح للجميع مجاناً • الدخول بحساب <strong>Google</strong> وتأكيد <strong>رقم الهاتف التونسي</strong> مخصّص للنشر واستلام طلبات الصيانة العاجلة (<strong>مجاناً بالكامل</strong>).
+        </p>
+      </div>
+
+      <!-- Step 1: Google OAuth -->
+      <div id="accountGoogleBox" class="rounded-3xl border border-[#E4EAE8] bg-white p-5 shadow-sm text-center space-y-3.5">
+        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-3xl">🔐</div>
+        <h3 class="text-base font-black text-[#132A23]">دخول سريع بحساب Google</h3>
+        <p class="text-xs font-semibold text-slate-500">بدون كلمة مرور وبدون رمز سري — اضغط أدناه ثم أضف رقم هاتفك التونسي (إجباري) لتفعيل حسابك.</p>
+        <button id="googleSignInBtn" type="button" class="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-[#0D6857] hover:bg-[#094D40] active:scale-[0.99] py-3.5 px-4 text-sm font-black text-white shadow-sm transition">
+          <span>🇬</span><span>المتابعة باستخدام Google ←</span>
+        </button>
+      </div>
+
+      <!-- Step 2: Mandatory Tunisian Phone Activation -->
+      <div id="accountPhoneStepBox" class="hidden rounded-3xl border-2 border-amber-300 bg-white p-4 shadow-sm space-y-3">
+        <div class="flex items-center justify-between gap-2">
+          <h3 class="text-sm font-black text-[#132A23]">📱 خطوة إجبارية: تفعيل رقم الهاتف التونسي</h3>
+          <button id="cancelGoogleStepBtn" type="button" class="text-xs font-extrabold text-rose-700 hover:underline">تغيير الحساب</button>
+        </div>
+        <p class="text-xs font-bold text-slate-600">تم الدخول بـ: <span id="googleSignedEmail" class="text-emerald-800" dir="ltr"></span> — لا يتفعّل الحساب إلا بعد إدخال رقم هاتف تونسي صحيح (8 أرقام).</p>
+        <form id="phoneActivationForm" class="space-y-3">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label for="accName" class="block text-xs font-extrabold text-slate-700 mb-1">الاسم أو اسم الورشة *</label>
+              <input id="accName" type="text" required placeholder="مثال: ورشة الأمين" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2.5 text-xs sm:text-sm font-bold outline-none focus:border-[#0D6857]" />
+            </div>
+            <div>
+              <label for="accRole" class="block text-xs font-extrabold text-slate-700 mb-1">نوع الحساب</label>
+              <select id="accRole" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2.5 text-xs sm:text-sm font-bold outline-none focus:border-[#0D6857]">
+                <option value="advertiser">🛒 معلن / صاحب نصبة</option>
+                <option value="craftsman">🛠️ حرفي / ورشة</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label for="accPhone" class="block text-xs font-extrabold text-slate-700 mb-1">رقم الهاتف التونسي (إجباري — 8 أرقام) *</label>
+            <input id="accPhone" type="tel" inputmode="tel" maxlength="16" required placeholder="55192340 أو +216 55192340" class="w-full rounded-xl border-2 border-[#0D6857] bg-[#F8FAF9] px-3 py-2.5 text-sm font-black outline-none" dir="ltr" />
+          </div>
+          <div id="accPrivacySlot"></div>
+          <button type="submit" class="w-full rounded-2xl bg-[#0D6857] hover:bg-[#094D40] py-3 text-sm font-black text-white shadow-sm transition">تفعيل الحساب مجاناً ←</button>
+        </form>
+      </div>
+
+      <!-- Step 3: Active Dashboard -->
+      <div id="accountDashBox" class="hidden space-y-3">
+        <div class="rounded-3xl border border-emerald-200 bg-white p-4 shadow-sm space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-xl">👤</div>
+              <div class="min-w-0">
+                <h3 id="dashName" class="text-sm font-black text-[#132A23] truncate">—</h3>
+                <p id="dashMeta" class="text-xs font-bold text-slate-600 truncate">—</p>
+                <p id="dashEmail" class="text-[10px] font-bold text-slate-400 truncate" dir="ltr"></p>
+              </div>
+            </div>
+            <button id="logoutBtn" type="button" class="shrink-0 rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-extrabold text-rose-700 hover:bg-rose-100 transition">خروج</button>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="dashAddOfferBtn" type="button" class="rounded-xl bg-[#0D6857] py-2.5 text-xs font-extrabold text-white hover:bg-[#094D40] transition">+ نشر عرض في السوق</button>
+            <button id="dashAddCraftBtn" type="button" class="rounded-xl bg-blue-700 py-2.5 text-xs font-extrabold text-white hover:bg-blue-800 transition">+ إضافة بطاقة حرفي</button>
+          </div>
+        </div>
+        <div class="rounded-2xl border border-[#E4EAE8] bg-white p-4 shadow-sm">
+          <h4 class="text-xs font-black text-[#132A23] mb-2">📌 منشوراتي النشطة</h4>
+          <div id="myPostsList" class="space-y-2 text-xs text-slate-500 font-bold"></div>
+        </div>
+        <!-- Prominent Logout / Switch Account Button -->
+        <button id="switchAccountBtn" type="button" class="w-full rounded-2xl border-2 border-slate-300 bg-white py-3 text-xs font-black text-slate-800 hover:bg-slate-50 transition">🔄 تسجيل الخروج والدخول بحساب Google آخر</button>
+        <button id="openDeleteAccModalBtn" type="button" class="w-full rounded-2xl border border-rose-200 bg-white py-2.5 text-xs font-black text-rose-700 hover:bg-rose-50 transition">🗑️ حذف حسابي وبياناتي نهائياً</button>
+      </div>
+
+      
+      <!-- Admin Dashboard Box (Visible Only to Admins) -->
+      <div id="adminPanelBox" class="hidden rounded-3xl border-2 border-[#0D6857] bg-white p-4 shadow-md space-y-3">
+        <div class="flex items-center justify-between gap-2">
+          <h3 class="text-sm font-black text-[#0D6857]">🛡️ لوحة الإدارة</h3>
+          <button id="adminRefreshBtn" type="button" class="rounded-xl bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-[11px] font-extrabold text-[#0D6857]">🔄 تحديث</button>
+        </div>
+        <p id="adminStatsTxt" class="text-[11px] font-bold text-slate-600">جاري التحميل...</p>
+        <div class="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+          <button type="button" data-admin-subtab="monitor" class="rounded-xl bg-slate-100 text-slate-700 px-1.5 py-2 text-[10px] font-extrabold">📊 مراقبة</button>
+          <button type="button" data-admin-subtab="accounts" class="rounded-xl bg-slate-100 text-slate-700 px-1.5 py-2 text-[10px] font-extrabold">👥 المسجلين</button>
+          <button type="button" data-admin-subtab="messages" class="rounded-xl bg-[#0D6857] text-white px-1.5 py-2 text-[10px] font-black">✉️ الرسائل</button>
+          <button type="button" data-admin-subtab="reports" class="rounded-xl bg-slate-100 text-slate-700 px-1.5 py-2 text-[10px] font-extrabold">🚩 البلاغات</button>
+          <button type="button" data-admin-subtab="craftsmen" class="rounded-xl bg-slate-100 text-slate-700 px-1.5 py-2 text-[10px] font-extrabold">🛠️ الحرفيون</button>
+          <button type="button" data-admin-subtab="offers" class="rounded-xl bg-slate-100 text-slate-700 px-1.5 py-2 text-[10px] font-extrabold">🧺 العروض</button>
+        </div>
+        <div id="adminPanelContent" class="space-y-2 max-h-96 overflow-y-auto"></div>
+      </div>
+
+      <!-- Direct Private Message to Admin (Supabase Write-Only) -->
+      <button type="button" data-open-contact="اقتراح أو استفسار عام" class="w-full rounded-2xl border border-[#DCE4E1] bg-white py-3 text-xs font-black text-[#0D6857] hover:bg-emerald-50 shadow-sm transition">✉️ مراسلة إدارة «خوذ بايك» (استفسار / تبليغ / طلب حذف)</button>
+    </section>
+  </main>
+
+  <!-- Fixed 5-Tab Bottom Navigation (Circular Colored Orbs Matching Top Bar) -->
+  <nav class="fixed bottom-0 inset-x-0 z-40 border-t border-[#E2EAE7] bg-white/95 backdrop-blur shadow-[0_-6px_20px_rgba(0,0,0,0.06)]">
+    <div class="mx-auto grid max-w-2xl grid-cols-5 px-1 pt-1.5 pb-2 text-center">
+      <button type="button" data-tab="market" class="kb-nav-btn active flex flex-col items-center gap-1 text-slate-600">
+        <span class="kb-nav-orb bg-emerald-50 border-emerald-200">🧺</span>
+        <span class="text-[10px] font-extrabold leading-none">السوق</span>
+      </button>
+      <button type="button" data-tab="emergency" class="kb-nav-btn relative flex flex-col items-center gap-1 text-slate-600">
+        <span class="kb-nav-orb bg-rose-50 border-rose-200">⚡</span>
+        <span class="text-[10px] font-extrabold leading-none">عاجلة</span>
+        <span id="navEmergBadge" class="absolute -top-0.5 left-1/2 translate-x-2.5 rounded-full bg-rose-600 px-1.5 text-[9px] font-black text-white shadow-sm">0</span>
+      </button>
+      <button type="button" data-tab="crafts" class="kb-nav-btn flex flex-col items-center gap-1 text-slate-600">
+        <span class="kb-nav-orb bg-amber-50 border-amber-200">🛠️</span>
+        <span class="text-[10px] font-extrabold leading-none">الحرفيين</span>
+      </button>
+      <button type="button" data-tab="map" class="kb-nav-btn flex flex-col items-center gap-1 text-slate-600">
+        <span class="kb-nav-orb bg-sky-50 border-sky-200">🗺️</span>
+        <span class="text-[10px] font-extrabold leading-none">الخريطة</span>
+      </button>
+      <button type="button" data-tab="account" class="kb-nav-btn flex flex-col items-center gap-1 text-slate-600">
+        <span class="kb-nav-orb bg-slate-100 border-slate-200">👤</span>
+        <span class="text-[10px] font-extrabold leading-none">حسابي</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- MODAL: EMERGENCY -->
+  <div id="emergencyModal" class="hidden fixed inset-0 z-50 kb-modal-backdrop flex items-end sm:items-center justify-center p-2 sm:p-4">
+    <div class="w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl bg-white p-4 shadow-2xl space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <h3 class="text-base font-black text-rose-700">⚡ نشر طلب صيانة عاجلة</h3>
+        <button type="button" data-close-modal="emergencyModal" class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">✕</button>
+      </div>
+      <form id="emergencyForm" class="space-y-3">
+        <div class="rounded-2xl border-2 border-dashed border-rose-300 bg-rose-50/40 p-2.5 text-center space-y-1.5">
+          <label for="emPhotoInput" class="block cursor-pointer">
+            <img id="emPhotoPreview" src="" alt="معاينة صورة العطب" class="hidden mx-auto mb-1.5 max-h-36 rounded-xl object-cover shadow-sm" />
+            <span id="emPhotoStatus" class="block text-xs font-extrabold text-rose-800">📸 إضافة صورة للعطب (اختياري — كاميرا أو معرض، تُضغط تلقائياً)</span>
+          </label>
+          <input id="emPhotoInput" type="file" accept="image/*" class="hidden" />
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label for="emType" class="block text-xs font-extrabold text-slate-700 mb-1">نوع العطب</label>
+            <select id="emType" required class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-rose-500">
+              <option value="سبّاك طوارئ">🔧 سبّاك عاجل / تسرب ماء</option>
+              <option value="كهربائي طوارئ">⚡ كهربائي عاجل</option>
+              <option value="تسرب غاز">🔥 تسرب غاز</option>
+              <option value="عطل سيارة">🚗 عطل سيارة على الطريق</option>
+              <option value="مساعدة عاجلة">🛠️ تدخّل صيانة عاجل</option>
+            </select>
+          </div>
+          <div>
+            <label for="emGov" class="block text-xs font-extrabold text-slate-700 mb-1">الولاية</label>
+            <select id="emGov" required class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-rose-500"></select>
+          </div>
+        </div>
+        <div>
+          <label for="emDesc" class="block text-xs font-extrabold text-slate-700 mb-1">وصف الحالة والمكان</label>
+          <textarea id="emDesc" rows="2" required placeholder="صف العطب ومكانه بدقة..." class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-rose-500"></textarea>
+        </div>
+        <div>
+          <label for="emPhone" class="block text-xs font-extrabold text-slate-700 mb-1">رقم الهاتف التونسي (إجباري للتواصل) *</label>
+          <input id="emPhone" type="tel" inputmode="tel" maxlength="16" required placeholder="55123456" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-rose-500" dir="ltr" />
+        </div>
+        <div>
+          <div class="flex items-center justify-between mb-1 gap-2">
+            <span class="text-xs font-extrabold text-rose-800">📍 حدد موقعك بدقة (إجباري) *</span>
+            <button id="emUseGpsBtn" type="button" class="rounded-lg bg-amber-100 border border-amber-300 px-2.5 py-1 text-[11px] font-black text-amber-950 hover:bg-amber-200">📡 التقاط GPS</button>
+          </div>
+          <div id="emPickerMap" class="overflow-hidden rounded-2xl border-2 border-rose-200" style="height: 175px; width: 100%;"></div>
+          <div class="mt-1 flex items-center justify-between text-[11px] font-bold">
+            <span id="emLocBadge" class="text-rose-700">⚠️ اضغط على الخريطة أو زر GPS لتأكيد الموقع</span>
+            <span id="emDistPreview" class="text-emerald-800"></span>
+          </div>
+          <p id="emCoordsTxt" class="text-[10px] font-bold text-slate-400" dir="ltr">33.8815, 10.0982</p>
+        </div>
+        <div id="emPrivacySlot"></div>
+        <button id="emSubmitBtn" type="submit" class="w-full rounded-xl bg-rose-600 hover:bg-rose-700 py-2.5 text-sm font-black text-white">نشر طلب الصيانة العاجلة فوراً</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD OFFER (24h Max + Short-Hour Flash Options) -->
+  <div id="offerModal" class="hidden fixed inset-0 z-50 kb-modal-backdrop flex items-end sm:items-center justify-center p-2 sm:p-4">
+    <div class="w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl bg-white p-4 shadow-2xl space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <h3 class="text-base font-black text-[#0D6857]">🧺 نشر عرض جديد (24س للمأكولات • 3 أيام لغير المأكولات)</h3>
+        <button type="button" data-close-modal="offerModal" class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">✕</button>
+      </div>
+      <form id="offerForm" class="space-y-3">
+        <div class="rounded-2xl border-2 border-dashed border-emerald-300 bg-emerald-50/40 p-3 text-center space-y-2">
+          <label for="ofPhotoInput" class="block cursor-pointer">
+            <img id="ofPhotoPreview" src="" alt="معاينة الصورة" class="hidden mx-auto mb-2 max-h-40 rounded-xl object-cover shadow-sm" />
+            <span id="ofPhotoStatus" class="block text-xs font-extrabold text-emerald-900">📸 اضغط لاختيار صورة من المعرض أو الكاميرا (تُضغط تلقائياً &lt; 55 KB)</span>
+          </label>
+          <input id="ofPhotoInput" type="file" accept="image/*" class="hidden" />
+        </div>
+        <div>
+          <label for="ofTitle" class="block text-xs font-extrabold text-slate-700 mb-1">عنوان العرض</label>
+          <input id="ofTitle" type="text" required minlength="3" placeholder="مثال: طماطم وفلفل طازج أو سردينة باب بحر" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]" />
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label for="ofCat" class="block text-xs font-extrabold text-slate-700 mb-1">الفئة</label>
+            <select id="ofCat" required class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]"></select>
+          </div>
+          <div>
+            <label for="ofPrice" class="block text-xs font-extrabold text-slate-700 mb-1">السعر (د.ت)</label>
+            <input id="ofPrice" type="number" min="0.001" step="0.001" required placeholder="5.250" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]" dir="ltr" />
+          </div>
+        </div>
+        <div>
+          <label for="ofDurationHours" class="block text-xs font-extrabold text-slate-700 mb-1">⏱️ مدة العرض (يُحذف تلقائياً عند الانتهاء)</label>
+          <select id="ofDurationHours" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]">
+            <option value="72">📅 3 أيام / 72 ساعة (للبضائع غير المأكولة)</option>
+            <option value="24">🕒 24 ساعة (المدة القياسية للمأكولات)</option>
+            <option value="12">⚡ 12 ساعة (عرض يومي سريع)</option>
+            <option value="6">⚡ 6 ساعات (بائع متجول / نصبة)</option>
+            <option value="4">⚡ 4 ساعات (عرض سريع)</option>
+            <option value="2">⚡ ساعتان فقط (كمية محدودة جداً)</option>
+          </select>
+        </div>
+        <div id="vehicleSpecsBox" class="hidden rounded-2xl border border-emerald-200 bg-[#F8FAF9] p-3 space-y-2">
+          <p class="text-[11px] font-black text-emerald-900">🚗 مواصفات السيارة أو الدراجة (اختياري)</p>
+          <div class="grid grid-cols-2 gap-2">
+            <input id="vehBrand" type="text" placeholder="الماركة والموديل (Clio 4)" class="rounded-xl border border-[#DCE4E1] bg-white px-2.5 py-1.5 text-xs font-bold outline-none" />
+            <input id="vehYear" type="number" min="1980" max="2027" placeholder="سنة الصنع (2019)" class="rounded-xl border border-[#DCE4E1] bg-white px-2.5 py-1.5 text-xs font-bold outline-none" dir="ltr" />
+            <input id="vehKm" type="number" min="0" placeholder="الكيلومتراج (120000)" class="rounded-xl border border-[#DCE4E1] bg-white px-2.5 py-1.5 text-xs font-bold outline-none" dir="ltr" />
+            <select id="vehFuel" class="rounded-xl border border-[#DCE4E1] bg-white px-2.5 py-1.5 text-xs font-bold outline-none">
+              <option value="بنزين">بنزين (Essence)</option>
+              <option value="مازوط">مازوط (Diesel)</option>
+              <option value="دراجة نارية">دراجة نارية</option>
+              <option value="دراجة عادية">دراجة عادية (VTT)</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label for="ofDesc" class="block text-xs font-extrabold text-slate-700 mb-1">وصف المنتوج / المواصفات ومكان النصبة</label>
+          <textarea id="ofDesc" rows="2" required placeholder="اشرح المنتوج والأسعار ومكان التواجد..." class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label for="ofGov" class="block text-xs font-extrabold text-slate-700 mb-1">الولاية</label>
+            <select id="ofGov" required class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]"></select>
+          </div>
+          <div>
+            <label for="ofPhone" class="block text-xs font-extrabold text-slate-700 mb-1">رقم الهاتف التونسي</label>
+            <input id="ofPhone" type="tel" inputmode="tel" maxlength="16" required placeholder="55192340" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]" dir="ltr" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2 items-end">
+          <div>
+            <label for="ofSeller" class="block text-xs font-extrabold text-slate-700 mb-1">اسم البائع / المعتمدية</label>
+            <input id="ofSeller" type="text" required placeholder="عم الطاهر — باب بحر" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]" />
+          </div>
+          <button id="ofGpsBtn" type="button" class="rounded-xl border border-emerald-300 bg-emerald-50 py-2 px-2.5 text-xs font-extrabold text-emerald-900 hover:bg-emerald-100">📍 موقعي الدقيق</button>
+        </div>
+        <p id="ofGpsStatus" class="text-[10px] font-bold text-slate-500"></p>
+        <div id="offerPrivacySlot"></div>
+        <button id="ofSubmitBtn" type="submit" class="w-full rounded-xl bg-[#0D6857] hover:bg-[#094D40] py-2.5 text-sm font-black text-white">نشر العرض الآن</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: QUICK PRICE EDIT (Triggers 🔥 تخفيض الآن when lowered) -->
+  <div id="quickPriceModal" class="hidden fixed inset-0 z-50 kb-modal-backdrop flex items-end sm:items-center justify-center p-2 sm:p-4">
+    <div class="w-full max-w-md rounded-3xl bg-white p-4 shadow-2xl space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+        <h3 class="text-sm font-black text-[#0D6857]">🏷️ تعديل السعر السريع</h3>
+        <button type="button" data-close-modal="quickPriceModal" class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">✕</button>
+      </div>
+      <p id="quickPriceTitle" class="text-xs font-bold text-slate-700 truncate"></p>
+      <p id="quickCurrentPrice" class="text-xs font-extrabold text-amber-800"></p>
+      <form id="quickPriceForm" class="space-y-3">
+        <div>
+          <label for="quickNewPrice" class="block text-xs font-extrabold text-slate-700 mb-1">السعر الجديد (د.ت) — إذا نزل السعر تظهر شارة «تخفيض الآن 🔥»</label>
+          <input id="quickNewPrice" type="number" min="0.001" step="0.001" required class="w-full rounded-xl border-2 border-[#0D6857] bg-[#F8FAF9] px-3 py-2.5 text-sm font-black outline-none" dir="ltr" />
+        </div>
+        <button type="submit" class="w-full rounded-xl bg-[#0D6857] hover:bg-[#094D40] py-2.5 text-xs font-black text-white">حفظ السعر الجديد</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: SHARE OFFER (Facebook + WhatsApp + Copy + Native) -->
+  <div id="shareModal" class="hidden fixed inset-0 z-50 kb-modal-backdrop flex items-end sm:items-center justify-center p-2 sm:p-4">
+    <div class="w-full max-w-md rounded-3xl bg-white p-4 shadow-2xl space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+        <h3 class="text-sm font-black text-[#132A23]">📤 مشاركة الإعلان</h3>
+        <button type="button" data-close-modal="shareModal" class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">✕</button>
+      </div>
+      <p id="shareOfferTitle" class="text-xs font-bold text-slate-600 truncate"></p>
+      <div class="grid grid-cols-2 gap-2">
+        <button id="shareFbBtn" type="button" class="flex items-center justify-center gap-1.5 rounded-2xl bg-[#1877F2] hover:bg-blue-700 py-3 text-xs font-black text-white shadow-sm transition">
+          <span>📘</span><span>فيسبوك</span>
+        </button>
+        <button id="shareMsgBtn" type="button" class="flex items-center justify-center gap-1.5 rounded-2xl bg-[#0084FF] hover:bg-sky-600 py-3 text-xs font-black text-white shadow-sm transition">
+          <span>✉️</span><span>ماسنجر</span>
+        </button>
+        <button id="shareWaBtn" type="button" class="flex items-center justify-center gap-1.5 rounded-2xl bg-[#25D366] hover:bg-emerald-600 py-3 text-xs font-black text-white shadow-sm transition">
+          <span>💬</span><span>واتساب</span>
+        </button>
+        <button id="shareCopyBtn" type="button" class="flex items-center justify-center gap-1.5 rounded-2xl border border-[#DCE4E1] bg-[#F8FAF9] hover:bg-slate-100 py-3 text-xs font-black text-[#132A23] transition">
+          <span>📋</span><span>نسخ النص والرابط</span>
+        </button>
+        <button id="shareNativeBtn" type="button" class="col-span-2 flex items-center justify-center gap-1.5 rounded-2xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 py-3 text-xs font-black text-emerald-900 transition">
+          <span>📤</span><span>تطبيقات أخرى</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD CRAFTSMAN -->
+  <div id="craftModal" class="hidden fixed inset-0 z-50 kb-modal-backdrop flex items-end sm:items-center justify-center p-2 sm:p-4">
+    <div class="w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl bg-white p-4 shadow-2xl space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <h3 id="craftModalTitle" class="text-base font-black text-[#0D6857]">🛠️ تسجيل حرفي أو ورشة</h3>
+        <button type="button" data-close-modal="craftModal" class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">✕</button>
+      </div>
+      <form id="craftForm" class="space-y-3">
+        <div>
+          <label for="crName" class="block text-xs font-extrabold text-slate-700 mb-1">الاسم أو اسم الورشة</label>
+          <input id="crName" type="text" required placeholder="مثال: المعلم صابر للتبريد" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]" />
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label for="crSpec" class="block text-xs font-extrabold text-slate-700 mb-1">الاختصاص</label>
+            <select id="crSpec" required class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]"></select>
+          </div>
+          <div>
+            <label for="crGov" class="block text-xs font-extrabold text-slate-700 mb-1">الولاية</label>
+            <select id="crGov" required class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]"></select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label for="crPhone" class="block text-xs font-extrabold text-slate-700 mb-1">رقم الهاتف التونسي</label>
+            <input id="crPhone" type="tel" inputmode="tel" maxlength="16" required placeholder="98123456" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]" dir="ltr" />
+          </div>
+          <div>
+            <label for="crArea" class="block text-xs font-extrabold text-slate-700 mb-1">المعتمدية / الحي</label>
+            <input id="crArea" type="text" required placeholder="قابس المدينة" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]" />
+          </div>
+        </div>
+        <div>
+          <label for="crNote" class="block text-xs font-extrabold text-slate-700 mb-1">وصف مختصر للخدمات</label>
+          <input id="crNote" type="text" required placeholder="تركيب وصيانة وشحن غاز المكيفات..." class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]" />
+        </div>
+        <div id="craftPrivacySlot"></div>
+        <button id="crSubmitBtn" type="submit" class="w-full rounded-xl bg-[#0D6857] hover:bg-[#094D40] py-2.5 text-sm font-black text-white">حفظ وإظهار في دليل الحرفيين</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: REPORT -->
+  <div id="reportModal" class="hidden fixed inset-0 z-50 kb-modal-backdrop flex items-end sm:items-center justify-center p-2 sm:p-4">
+    <div class="w-full max-w-md rounded-3xl bg-white p-4 shadow-2xl space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+        <h3 class="text-sm font-black text-rose-800">🚩 إبلاغ عن إعلان</h3>
+        <button type="button" data-close-modal="reportModal" class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">✕</button>
+      </div>
+      <p id="reportTargetTitle" class="text-xs font-bold text-slate-600 truncate"></p>
+      <form id="reportForm" class="space-y-3">
+        <label for="reportReason" class="block text-xs font-extrabold text-slate-700">سبب الإبلاغ</label>
+        <select id="reportReason" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none">
+          <option value="رقم هاتف خاطئ أو لا يجيب">رقم هاتف خاطئ أو لا يجيب</option>
+          <option value="السلعة مباعة أو غير متوفرة">السلعة مباعة أو غير متوفرة</option>
+          <option value="سعر غير حقيقي أو إعلان مضلل">سعر غير حقيقي أو إعلان مضلل</option>
+          <option value="سلعة مشبوهة أو غير قانونية">سلعة مشبوهة أو غير قانونية</option>
+          <option value="محتوى مخالف أو غير ملائم للفئة">محتوى مخالف أو غير ملائم للفئة</option>
+        </select>
+        <button type="submit" class="w-full rounded-xl bg-rose-600 hover:bg-rose-700 py-2.5 text-xs font-black text-white">إرسال البلاغ</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: DELETE ACCOUNT -->
+  <div id="deleteAccountModal" class="hidden fixed inset-0 z-50 kb-modal-backdrop flex items-end sm:items-center justify-center p-2 sm:p-4">
+    <div class="w-full max-w-md rounded-3xl bg-white p-5 shadow-2xl space-y-3 text-center">
+      <div class="text-3xl">⚠️</div>
+      <h3 class="text-base font-black text-rose-800">حذف الحساب والبيانات نهائياً</h3>
+      <p class="text-xs font-semibold text-slate-600">سيتم حذف ملف حسابك وجميع عروضك وبطاقاتك المسجلة على «خوذ بايك» بشكل نهائي.</p>
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <button type="button" data-close-modal="deleteAccountModal" class="rounded-xl bg-slate-100 py-2.5 text-xs font-black text-slate-700">إلغاء</button>
+        <button id="confirmDeleteAccBtn" type="button" class="rounded-xl bg-rose-600 py-2.5 text-xs font-black text-white">نعم، احذف نهائياً</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: TERMS -->
+  <div id="termsModal" class="hidden fixed inset-0 z-50 kb-modal-backdrop flex items-end sm:items-center justify-center p-2 sm:p-4">
+    <div class="w-full max-w-lg max-h-[88vh] overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <h3 class="text-base font-black text-[#132A23]">⚖️ شروط الاستخدام وإخلاء المسؤولية</h3>
+        <button type="button" data-close-modal="termsModal" class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">✕</button>
+      </div>
+      <div class="space-y-2.5 text-xs sm:text-sm font-semibold text-slate-700 leading-relaxed">
+        <p><strong>1. طبيعة المنصة:</strong> «خوذ بايك» هي <strong>مبادرة فردية مجانية غير ربحية</strong> تقتصر على دور الوسيط التقني للربط بين المواطنين والحرفيين وأصحاب العروض في الولايات الـ 24، ولا تتدخل في البيع أو الشراء أو الاتفاقات المالية.</p>
+        <p><strong>2. شرعية المعروضات وإخلاء المسؤولية:</strong> يتحمل الناشر وحده كامل المسؤولية المدنية والجزائية عن معروضاته، ولا تتحمل المنصة أي مسؤولية إذا تبيّن أن السلعة <strong>مسروقة أو مقلّدة أو مجهولة المصدر أو مخالفة للقانون التونسي</strong>.</p>
+        <p><strong>3. الرقابة الذاتية والتبليغ:</strong> يُمنع نشر الخمور والممنوعات والألفاظ السوقية أو نشر أرقام هواتف الغير دون إذن. تحتفظ الإدارة بحق الحذف الفوري، كما يُخفى تلقائياً أي إعلان يتلقى 3 بلاغات.</p>
+        <p><strong>4. صلاحية الإعلانات:</strong> تُحذف إعلانات المأكولات تلقائياً بعد <strong>24 ساعة</strong>، وتبقى البضائع غير المأكولة لمدة <strong>3 أيام</strong> ثم تختفي تلقائياً (أو تختفي بعد <strong>ساعة واحدة</strong> من الضغط على زر «تم البيع»).</p>
+        <p><strong>5. الصيانة العاجلة:</strong> خدمة للصيانة المستعجلة فقط ولا تغني عن أرقام النجدة الرسمية: الحماية المدنية (<strong>198</strong>)، الشرطة (<strong>197</strong>)، الحرس الوطني (<strong>193</strong>)، والإسعاف (<strong>190</strong>).</p>
+        <div class="pt-1 flex flex-col gap-2">
+          <a href="./privacy.html" class="font-black text-[#0D6857] underline">🔒 قراءة سياسة حماية المعطيات الشخصية الكاملة (القانون عدد 63 لسنة 2004)</a>
+          <button type="button" data-open-contact="طلب حذف معطيات / رقم هاتف" class="w-full rounded-xl border border-emerald-300 bg-emerald-50 py-2 text-xs font-black text-[#0D6857] hover:bg-emerald-100 transition">✉️ مراسلة الإدارة مباشرة (طلب حذف أو تبليغ)</button>
+        </div>
+      </div>
+      <button type="button" data-close-modal="termsModal" class="w-full rounded-xl bg-[#0D6857] py-2.5 text-sm font-black text-white">فهمت وموافق</button>
+    </div>
+  </div>
+
+  <!-- MODAL: INSTALL / DOWNLOAD APP (PWA + APK) -->
+  <div id="installAppModal" class="hidden fixed inset-0 z-50 kb-modal-backdrop flex items-end sm:items-center justify-center p-2 sm:p-4">
+    <div class="w-full max-w-md rounded-3xl bg-white p-5 shadow-2xl space-y-3.5">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <h3 class="text-base font-black text-[#0D6857]">📲 تنزيل وتثبيت تطبيق «خوذ بايك»</h3>
+        <button type="button" data-close-modal="installAppModal" class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">✕</button>
+      </div>
+
+      <!-- Option 1: Direct PWA Install -->
+      <div class="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3.5 space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <h4 class="text-xs sm:text-sm font-black text-[#132A23]">⚡ الخيار 1: تثبيت فوري كتطبيق خفيف (PWA)</h4>
+          <span class="rounded-full bg-emerald-200/80 px-2 py-0.5 text-[10px] font-black text-emerald-950">بدون تحذيرات</span>
+        </div>
+        <p class="text-xs font-semibold text-slate-700 leading-relaxed">
+          يعمل مباشرة على الشاشة الرئيسية لهاتفك بأقل حجم وبدون متجر. (إذا فتحت الرابط من داخل <strong>ماسنجر</strong>، انسخ الرابط وافتحه في <strong>Chrome</strong> أو <strong>Safari</strong>).
+        </p>
+        <button id="pwaInstallNowBtn" type="button" class="w-full rounded-xl bg-[#0D6857] hover:bg-[#094D40] py-2.5 text-xs font-black text-white shadow-sm transition">
+          📲 تثبيت التطبيق على الشاشة الرئيسية الآن
+        </button>
+        <button id="copyAppLinkBtn" type="button" class="w-full rounded-xl border border-emerald-300 bg-white hover:bg-emerald-50 py-2 text-xs font-extrabold text-[#0D6857] transition">
+          📋 نسخ رابط التطبيق لفتحه في المتصفح
+        </button>
+      </div>
+
+      <!-- Option 2: Android APK Download -->
+      <div class="rounded-2xl border border-amber-200 bg-amber-50/60 p-3.5 space-y-2">
+        <h4 class="text-xs sm:text-sm font-black text-amber-950">🤖 الخيار 2: تحميل نسخة أندرويد (APK)</h4>
+        <p class="text-xs font-semibold text-slate-700 leading-relaxed">
+          لتحميل ملف التثبيت المباشر على هواتف أندرويد عبر صفحة الإصدارات الرسمية:
+        </p>
+        <a id="downloadApkLink" href="https://github.com/compstory2-lang/kouthbayek/releases/latest/download/khouz-bayek.apk" target="_blank" rel="noopener" class="block w-full rounded-xl bg-amber-400 hover:bg-amber-300 py-2.5 text-center text-xs font-black text-[#132A23] shadow-sm transition">
+          📥 تحميل ملف APK للأندرويد
+        </a>
+        <p class="text-[10px] font-bold text-slate-500">
+          * ملاحظة: عند تثبيت APK خارج المتجر قد يطلب أندرويد الضغط على «Plus de détails ← Installer quand même».
+        </p>
+      </div>
+
+      <!-- Option 3: Scan QR Code -->
+      <div class="rounded-2xl border border-slate-200 bg-[#F8FAF9] p-3.5 text-center space-y-2">
+        <h4 class="text-xs sm:text-sm font-black text-[#132A23]">📷 الخيار 3: امسح الـ QR كود بكاميرا هاتف آخر</h4>
+        <p class="text-[11px] font-semibold text-slate-600">
+          موجّه مباشرة إلى رابط تطبيق «خوذ بايك» لتسهيل نشره في المحلات والبطاقات:
+        </p>
+        <div class="mx-auto inline-flex flex-col items-center gap-1.5 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=https%3A%2F%2Fcompstory2-lang.github.io%2Fkouthbayek%2F" alt="QR كود تطبيق خوذ بايك" loading="lazy" class="h-36 w-36 rounded-lg" />
+          <span class="text-[10px] font-bold text-slate-500" dir="ltr">compstory2-lang.github.io/kouthbayek</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: IMAGE ZOOM -->
+  <div id="imgZoomModal" class="hidden fixed inset-0 z-[70] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div class="relative w-full max-w-md rounded-3xl bg-white p-2.5 shadow-2xl space-y-2 text-center">
+      <button type="button" data-close-modal="imgZoomModal" aria-label="إغلاق" class="absolute top-4 left-4 z-10 rounded-full bg-black/70 hover:bg-black/90 px-3 py-1 text-xs font-black text-white shadow">✕ إغلاق</button>
+      <img id="imgZoomTarget" src="" alt="" class="max-h-[72vh] w-full rounded-2xl object-contain bg-slate-50" />
+      <p id="imgZoomCaption" class="px-2 pb-1 text-xs font-black text-[#132A23] truncate"></p>
+    </div>
+  </div>
+
+  <div id="kbToast" class="pointer-events-none fixed top-4 left-1/2 -translate-x-1/2 z-[60] hidden rounded-2xl bg-[#132A23]/95 px-4 py-2.5 text-xs font-extrabold text-white shadow-xl"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./config.js"></script>
+  <script src="./data.js"></script>
+  <script src="./map.js"></script>
+  <script src="./privacy.js"></script>
+  <script src="./app.js"></script>
+  <script src="./admin.js"></script>
+</body>
+</html>
