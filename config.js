@@ -1,35 +1,48 @@
-// خوذ بايك — ملف الإعدادات والثوابت الكامل (config.js)
-(() => {
+// خوذ بايك — ملف الإعدادات والثوابت الكامل والموحّد (config.js v1.5-TN)
+window.KB_CONFIG = (() => {
   'use strict';
 
   const HR = 3600000; // ساعة واحدة بالملي ثانية
+  const VERSION = 'v1.5-TN';
+  const OFFER_TTL_HOURS = 24;
+  const STORAGE_BUCKET = 'offer-images';
+
+  const SUPABASE_URL = 'https://tlgfwkbsgaiyylhhmywv.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_oW2H_1p5MCX82_bJOObyfA_AplDj2bk';
+  const SUPABASE = {
+    url: SUPABASE_URL,
+    anonKey: SUPABASE_ANON_KEY
+  };
+
+  const ADMIN_EMAILS = ['jabeurj011@gmail.com'];
+  const ADMIN_USER_IDS = [];
 
   // 1) الولايات التونسية الـ 24 مع الإحداثيات المركزية
   const TN_GOVERNORATES = [
-    { ar: 'تونس', lat: 36.8065, lng: 10.1815 },
-    { ar: 'أريانة', lat: 36.8665, lng: 10.1647 },
-    { ar: 'بن عروس', lat: 36.7533, lng: 10.2282 },
-    { ar: 'منوبة', lat: 36.8081, lng: 10.0972 },
-    { ar: 'نابل', lat: 36.4561, lng: 10.7376 },
-    { ar: 'زغوان', lat: 36.4029, lng: 10.1429 },
-    { ar: 'بنزرت', lat: 37.2744, lng: 9.8739 },
-    { ar: 'باجة', lat: 36.7256, lng: 9.1817 },
-    { ar: 'جندوبة', lat: 36.5011, lng: 8.7802 },
-    { ar: 'الكاف', lat: 36.1742, lng: 8.7049 },
-    { ar: 'سليانة', lat: 36.0849, lng: 9.3708 },
-    { ar: 'سوسة', lat: 35.8256, lng: 10.6369 },
-    { ar: 'المنستير', lat: 35.7643, lng: 10.8113 },
-    { ar: 'المهدية', lat: 35.5047, lng: 11.0622 },
-    { ar: 'صفاقس', lat: 34.7406, lng: 10.7603 },
-    { ar: 'القيروان', lat: 35.6781, lng: 10.0963 },
-    { ar: 'القصرين', lat: 35.1676, lng: 8.8365 },
-    { ar: 'سيدي بوزيد', lat: 35.0382, lng: 9.4849 },
-    { ar: 'قابس', lat: 33.8815, lng: 10.0982 },
-    { ar: 'مدنين', lat: 33.3549, lng: 10.5055 },
-    { ar: 'تطاوين', lat: 32.9297, lng: 10.4518 },
-    { ar: 'قفصة', lat: 34.4250, lng: 8.7842 },
-    { ar: 'توزر', lat: 33.9197, lng: 8.1335 },
-    { ar: 'قبلي', lat: 33.7044, lng: 8.9690 }
+    { id: 'Gabès', ar: 'قابس', lat: 33.8815, lng: 10.0982 },
+    { id: 'Tunis', ar: 'تونس', lat: 36.8065, lng: 10.1815 },
+    { id: 'Ariana', ar: 'أريانة', lat: 36.8665, lng: 10.1647 },
+    { id: 'Ben Arous', ar: 'بن عروس', lat: 36.7533, lng: 10.2282 },
+    { id: 'Manouba', ar: 'منوبة', lat: 36.8081, lng: 10.0972 },
+    { id: 'Nabeul', ar: 'نابل', lat: 36.4561, lng: 10.7376 },
+    { id: 'Zaghouan', ar: 'زغوان', lat: 36.4029, lng: 10.1429 },
+    { id: 'Bizerte', ar: 'بنزرت', lat: 37.2744, lng: 9.8739 },
+    { id: 'Béja', ar: 'باجة', lat: 36.7256, lng: 9.1817 },
+    { id: 'Jendouba', ar: 'جندوبة', lat: 36.5011, lng: 8.7802 },
+    { id: 'Kef', ar: 'الكاف', lat: 36.1742, lng: 8.7049 },
+    { id: 'Siliana', ar: 'سليانة', lat: 36.0849, lng: 9.3708 },
+    { id: 'Sousse', ar: 'سوسة', lat: 35.8256, lng: 10.6369 },
+    { id: 'Monastir', ar: 'المنستير', lat: 35.7643, lng: 10.8113 },
+    { id: 'Mahdia', ar: 'المهدية', lat: 35.5047, lng: 11.0622 },
+    { id: 'Sfax', ar: 'صفاقس', lat: 34.7406, lng: 10.7603 },
+    { id: 'Kairouan', ar: 'القيروان', lat: 35.6781, lng: 10.0963 },
+    { id: 'Kasserine', ar: 'القصرين', lat: 35.1676, lng: 8.8365 },
+    { id: 'Sidi Bouzid', ar: 'سيدي بوزيد', lat: 35.0382, lng: 9.4849 },
+    { id: 'Médenine', ar: 'مدنين', lat: 33.3549, lng: 10.5055 },
+    { id: 'Tataouine', ar: 'تطاوين', lat: 32.9297, lng: 10.4518 },
+    { id: 'Gafsa', ar: 'قفصة', lat: 34.4250, lng: 8.7842 },
+    { id: 'Tozeur', ar: 'توزر', lat: 33.9197, lng: 8.1335 },
+    { id: 'Kebili', ar: 'قبلي', lat: 33.7044, lng: 8.9690 }
   ];
 
   // 2) فئات سوق الحومة والعروض اليومية (24 ساعة)
@@ -39,7 +52,8 @@
     { id: 'meat', label: 'لحوم ودواجن', icon: '🥩' },
     { id: 'fish', label: 'أسماك وغلال البحر', icon: '🐟' },
     { id: 'dairy', label: 'أجبان وألبان وبيض', icon: '🧀' },
-    { id: 'olive_oil', label: 'زيت زيتون وعسل وتمور', icon: '🫒' },
+    { id: 'farm', label: 'عولة ومنتوجات فلاحية', icon: '🫒' },
+    { id: 'olive_oil', label: 'زيت زيتون وعسل وتمور', icon: '🍯' },
     { id: 'bakery', label: 'خبز وحلويات ومأكولات', icon: '🥖' },
     { id: 'livestock', label: 'مواشي وأعلاف وفلاحة', icon: '🐑' },
     { id: 'vehicles', label: 'سيارات ودراجات وقطع', icon: '🚗' },
@@ -64,6 +78,7 @@
     { id: 'electric', label: 'كهربائي منازل', icon: '⚡', group: 'home' },
     { id: 'heating', label: 'تدفئة وغاز وسخّانات', icon: '🔥', group: 'home' },
     { id: 'hvac', label: 'تبريد وتكييف (فريغوريست)', icon: '❄️', group: 'tech' },
+    { id: 'ac', label: 'تبريد ومكيفات', icon: '❄️', group: 'tech' },
     { id: 'appliances', label: 'إصلاح كهرومنزلية', icon: '🧺', group: 'tech' },
     { id: 'mason', label: 'بنّاء وتليس وزليز', icon: '🧱', group: 'home' },
     { id: 'painter', label: 'دهّان وديكور وجبس', icon: '🎨', group: 'home' },
@@ -92,6 +107,11 @@
       { task: 'فحص وإصلاح تسرب غاز', range: '30 – 60 د.ت' }
     ],
     hvac: [
+      { task: 'تنظيف وصيانة مكيف (Entretien)', range: '35 – 55 د.ت' },
+      { task: 'شحن غاز المكيف (Gaz)', range: '60 – 110 د.ت' },
+      { task: 'تركيب مكيف جديد (Installation)', range: '90 – 150 د.ت' }
+    ],
+    ac: [
       { task: 'تنظيف وصيانة مكيف (Entretien)', range: '35 – 55 د.ت' },
       { task: 'شحن غاز المكيف (Gaz)', range: '60 – 110 د.ت' },
       { task: 'تركيب مكيف جديد (Installation)', range: '90 – 150 د.ت' }
@@ -128,21 +148,33 @@
     { id: 'مساعدة عاجلة', label: 'مساعدة عاجلة', icon: '🛠️' }
   ];
 
-  // 6) مفاتيح الاتصال بـ Supabase (مشروع kouthbayek)
-  const existing = window.KB_CONFIG || {};
-  const SUPABASE_URL = existing.SUPABASE_URL || 'https://tlgfwkbsgaiyylhhmywv.supabase.co';
-  const SUPABASE_ANON_KEY = existing.SUPABASE_ANON_KEY || 'Sb_publishable_oW2H_1p5MCX82_bJOObyfA_AplDj2bk';
+  // 6) قواعد الرقابة الذاتية: منع الخمور والممنوعات والألفاظ السوقية
+  const MODERATION_RULES = {
+    alcohol: [
+      'خمر', 'خمور', 'بيرة', 'ببيره', 'شراب كحولي', 'كحول للبيع', 'ويسكي', 'فودكا', 'نبيذ', 'شامبانيا', 'بوخة', 'سيلتيا', 'لاقي مخمر',
+      'alcool', 'biere', 'bière', 'whisky', 'whiskey', 'vodka', 'vin rouge', 'vin blanc', 'champagne', 'celtia', 'boukha', 'heineken'
+    ],
+    contraband: [
+      'مخدرات', 'زطلة', 'زطله', 'حشيش', 'كوكايين', 'هيروين', 'اكستازي', 'اقراص مخدرة', 'اريكا مخدر', 'باركيزول', 'ليريكا',
+      'drogue', 'cannabis', 'cocaine', 'heroine', 'zatla', 'extasy', 'tramadol', 'pregabaline',
+      'سلاح ناري', 'مسدس', 'بندقية صيد بدون رخصة', 'ذخيرة', 'متفجرات', 'صاعق كهربائي', 'pistolet', 'arme a feu', 'arme à feu'
+    ],
+    profanity: [
+      'قحب', 'منيك', 'منيوك', 'عاهرة', 'شرموط', 'زبي', 'كس ام', 'نيك', 'ميبون', 'طحان', 'كلب ابن', 'ابن الحرام',
+      'putain', 'salope', 'connard', 'encule', 'enculé', 'fdp', 'nik', 'kahba', 'miboune', 'tahan'
+    ]
+  };
 
-  // 7) حسابات الإدارة المعتمدة
-  const ADMIN_EMAILS = Array.from(new Set([
-    ...(Array.isArray(existing.ADMIN_EMAILS) ? existing.ADMIN_EMAILS : []),
-    'Jabeurj011@gmail.com'
-  ]));
-  const ADMIN_USER_IDS = Array.isArray(existing.ADMIN_USER_IDS) ? existing.ADMIN_USER_IDS : [];
+  const SEED_OFFERS = [];
+  const SEED_CRAFTS = [];
+  const SEED_EMERGENCIES = [];
 
-  window.KB_CONFIG = {
-    ...existing,
+  return {
     HR,
+    VERSION,
+    OFFER_TTL_HOURS,
+    STORAGE_BUCKET,
+    SUPABASE,
     SUPABASE_URL,
     SUPABASE_ANON_KEY,
     ADMIN_EMAILS,
@@ -152,6 +184,10 @@
     CRAFT_GROUPS,
     CRAFT_CATS,
     CRAFT_PRICE_GUIDE,
-    EMERG_CATS
+    EMERG_CATS,
+    MODERATION_RULES,
+    SEED_OFFERS,
+    SEED_CRAFTS,
+    SEED_EMERGENCIES
   };
 })();
