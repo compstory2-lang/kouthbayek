@@ -448,7 +448,7 @@
             ${ph ? `<a href="tel:+216${ph}" class="flex items-center justify-center gap-1 rounded-xl bg-[#0D6857] hover:bg-[#094D40] py-2 px-1.5 text-[11px] font-extrabold text-white transition"><span>📞</span><span>اتصال</span></a>` : '<span></span>'}
             ${ph ? `<a href="https://wa.me/216${ph}?text=${encodeURIComponent('مرحباً، بخصوص عرضك على خوذ بايك: ' + o.title)}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 py-2 px-1.5 text-[11px] font-extrabold text-white transition"><span>💬</span><span>واتساب</span></a>` : '<span></span>'}
             <button type="button" data-focus-map="market:${D.escHtml(o.id)}" class="flex items-center justify-center gap-1 rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] hover:bg-emerald-50 py-2 px-1.5 text-[11px] font-extrabold text-[#132A23] transition"><span>🗺️</span><span>خريطة</span></button>
-            ${mapsDirUrl ? `<a href="${D.escHtml(mapsDirUrl)}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl bg-blue-700 hover:bg-blue-800 py-2 px-1.5 text-[11px] font-extrabold text-white transition"><span>🧭</span><span>ماب</span></a>` : '<span></span>'}
+            ${mapsDirUrl ? `<a href="${D.escHtml(mapsDirUrl)}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 py-2 px-1 text-[10px] font-black text-blue-900 transition"><svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true"><path fill="#EA4335" d="M12 2C8.13 2 5 5.13 5 9c0 1.74.5 3.37 1.41 4.84.95 1.54 2.2 2.86 3.16 4.4.47.75.81 1.45 1.17 2.26.26.55.47 1.5 1.26 1.5s1-.95 1.25-1.5c.37-.81.7-1.51 1.17-2.26.96-1.53 2.21-2.85 3.16-4.4C18.5 12.37 19 10.74 19 9c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.6" fill="#FFFFFF"/><path fill="#4285F4" d="M12 2c3.87 0 7 3.13 7 7 0 1.3-.36 2.52-.98 3.57L12 9V2z" opacity="0.25"/></svg><span>قوقل ماب</span></a>` : '<span></span>'}
           </div>
 
           <div class="flex flex-wrap items-center justify-between gap-1.5 pt-1.5 border-t border-slate-100 text-[10px] font-extrabold">
@@ -564,7 +564,7 @@
             ${ph ? `<a href="tel:+216${ph}" class="flex items-center justify-center gap-1 rounded-xl bg-[#0D6857] hover:bg-[#094D40] py-2.5 px-2 text-xs font-extrabold text-white transition"><span>📞</span><span>اتصال</span></a>` : '<span></span>'}
             ${ph ? `<a href="https://wa.me/216${ph}?text=${encodeURIComponent('مرحباً، وجدت رقمك على خوذ بايك وأحتاج خدمة: ' + sp.label)}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 py-2.5 px-2 text-xs font-extrabold text-white transition"><span>💬</span><span>واتساب</span></a>` : '<span></span>'}
             <button type="button" data-focus-map="crafts:${D.escHtml(c.id)}" class="flex items-center justify-center gap-1 rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] hover:bg-emerald-50 py-2.5 px-2 text-xs font-extrabold text-[#132A23] transition"><span>🗺️</span><span>الخريطة</span></button>
-            ${mapsDirUrl ? `<a href="${D.escHtml(mapsDirUrl)}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl bg-blue-700 hover:bg-blue-800 py-2.5 px-2 text-xs font-extrabold text-white transition"><span>🧭</span><span>قوقل ماب</span></a>` : '<span></span>'}
+            ${mapsDirUrl ? `<a href="${D.escHtml(mapsDirUrl)}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 py-2.5 px-1.5 text-[11px] font-black text-blue-900 transition"><svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true"><path fill="#EA4335" d="M12 2C8.13 2 5 5.13 5 9c0 1.74.5 3.37 1.41 4.84.95 1.54 2.2 2.86 3.16 4.4.47.75.81 1.45 1.17 2.26.26.55.47 1.5 1.26 1.5s1-.95 1.25-1.5c.37-.81.7-1.51 1.17-2.26.96-1.53 2.21-2.85 3.16-4.4C18.5 12.37 19 10.74 19 9c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.6" fill="#FFFFFF"/><path fill="#4285F4" d="M12 2c3.87 0 7 3.13 7 7 0 1.3-.36 2.52-.98 3.57L12 9V2z" opacity="0.25"/></svg><span>قوقل ماب</span></a>` : '<span></span>'}
           </div>
         </article>
       `;
@@ -1105,40 +1105,46 @@
     closeModal('shareModal');
   });
 
-  $('shareMsgBtn').addEventListener('click', () => {
+  async function triggerNativeShareSheet(item, kind) {
+    const { url, text } = buildShareText(item, kind);
+    const title = item.title || item.type || 'خوذ بايك';
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Share) {
+      try {
+        await window.Capacitor.Plugins.Share.share({
+          title,
+          text,
+          url,
+          dialogTitle: 'مشاركة عبر'
+        });
+        return true;
+      } catch (err) {
+        if (err && String(err.message || '').toLowerCase().includes('cancel')) return true;
+      }
+    }
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text, url });
+        return true;
+      } catch (err) {
+        if (err && err.name === 'AbortError') return true;
+      }
+    }
+    return false;
+  }
+
+  $('shareMsgBtn').addEventListener('click', async () => {
     if (!state.shareTarget) return;
     const { url, text } = buildShareText(state.shareTarget, state.shareKind);
-
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).catch(() => {});
     }
-
     closeModal('shareModal');
 
-    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Share) {
-      window.Capacitor.Plugins.Share.share({ title: state.shareTarget.title || 'خوذ بايك', text, url }).catch(() => {});
-      return;
-    }
+    // في الأندرويد وChrome نفتح نافذة المشاركة الأصلية أولاً (تظهر فيها أيقونة ماسنجر مباشرة)
+    if (await triggerNativeShareSheet(state.shareTarget, state.shareKind)) return;
 
-    if (navigator.share) {
-      navigator.share({ title: state.shareTarget.title || 'خوذ بايك', text, url }).catch((err) => {
-        if (err && err.name === 'AbortError') return;
-        const isAndroid = /android/i.test(navigator.userAgent);
-        if (isAndroid) {
-          window.location.href = `intent://send/#Intent;scheme=fb-messenger;package=com.facebook.orca;S.android.intent.extra.TEXT=${encodeURIComponent(text)};end`;
-        } else {
-          window.open(`fb-messenger://share/?link=${encodeURIComponent(url)}`, '_blank', 'noopener');
-        }
-      });
-      return;
-    }
-
-    const isAndroid = /android/i.test(navigator.userAgent);
-    if (isAndroid) {
-      window.location.href = `intent://send/#Intent;scheme=fb-messenger;package=com.facebook.orca;S.android.intent.extra.TEXT=${encodeURIComponent(text)};end`;
-    } else {
-      window.open(`fb-messenger://share/?link=${encodeURIComponent(url)}`, '_blank', 'noopener');
-    }
+    // بديل احتياطي لفتح رابط ماسنجر
+    window.open(`https://www.facebook.com/dialog/send?link=${encodeURIComponent(url)}&app_id=291494419107518&redirect_uri=${encodeURIComponent(url)}`, '_blank', 'noopener');
   });
 
   $('shareWaBtn').addEventListener('click', () => {
@@ -1162,19 +1168,8 @@
 
   $('shareNativeBtn').addEventListener('click', async () => {
     if (!state.shareTarget) return;
-    const { url, text } = buildShareText(state.shareTarget, state.shareKind);
-    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Share) {
-      try {
-        await window.Capacitor.Plugins.Share.share({ title: state.shareTarget.title, text, url });
-        closeModal('shareModal');
-        return;
-      } catch (_) {}
-    }
-    if (navigator.share) {
-      navigator.share({ title: state.shareTarget.title, text, url }).catch(() => {});
-      closeModal('shareModal');
-      return;
-    }
+    closeModal('shareModal');
+    if (await triggerNativeShareSheet(state.shareTarget, state.shareKind)) return;
     showToast('💡 استخدم زر فيسبوك أو واتساب أو نسخ النص.');
   });
 
