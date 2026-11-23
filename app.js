@@ -404,70 +404,65 @@
       const isClosest = idx === 0 && state.marketSort === 'nearest';
       const hasDiscount = Number.isFinite(o.prevPrice) && o.prevPrice > Number(o.price);
       const isBroadcasting = state.liveOfferId === o.id || Boolean(o.liveLocation);
-      const cardBorder = isClosest ? 'border-2 border-amber-400/90 shadow-md' : 'border border-[#E4EAE8] shadow-sm';
-      const topBadge = isClosest
-        ? `<span class="inline-flex items-center gap-1 rounded-full bg-amber-100/90 border border-amber-200 px-3 py-1 text-[11px] font-black text-amber-900">⭐ الأقرب إليك</span>`
-        : `<span class="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200/80 px-3 py-1 text-[11px] font-black text-amber-950">${cat.icon} ${D.escHtml(cat.label)}</span>`;
-      const imgBlock = o.imageUrl
-        ? `<div class="overflow-hidden rounded-2xl border border-[#EAE5D8] bg-slate-100"><img src="${D.escHtml(o.imageUrl)}" alt="${D.escHtml(o.title)}" loading="lazy" decoding="async" class="h-52 w-full object-cover" /></div>`
-        : `<div class="flex h-36 w-full flex-col items-center justify-center rounded-2xl border border-[#EAE5D8] bg-gradient-to-br from-[#E8F6F2] via-[#F7F9F8] to-[#FEF3C7]/60 text-center px-4">
-             <div class="text-4xl">${cat.icon}</div>
-             <div class="mt-1.5 text-xs font-extrabold text-[#0D6857]/80">${D.escHtml(cat.label)} • ${D.escHtml(o.gov)}</div>
+      const cardBorder = state.sharedOfferId === o.id
+        ? 'border-2 border-[#0D6857] ring-4 ring-emerald-200/70 shadow-lg'
+        : (isClosest ? 'border-2 border-amber-400/90 shadow-md' : 'border border-[#E2EAE7] shadow-sm');
+      const thumbBlock = o.imageUrl
+        ? `<img src="${D.escHtml(o.imageUrl)}" alt="${D.escHtml(o.title)}" loading="lazy" decoding="async" class="h-24 w-24 shrink-0 rounded-2xl object-cover border border-[#EAE5D8] bg-slate-100" />`
+        : `<div class="flex h-24 w-24 shrink-0 flex-col items-center justify-center rounded-2xl border border-[#EAE5D8] bg-gradient-to-br from-[#E8F6F2] via-[#F7F9F8] to-[#FEF3C7]/60 text-center">
+             <span class="text-3xl leading-none">${cat.icon}</span>
+             <span class="mt-1 text-[9px] font-black text-[#0D6857]/80 px-1 truncate max-w-full">${D.escHtml(cat.label)}</span>
            </div>`;
       const mapsDirUrl = getGoogleMapsDirUrl(o);
       return `
-        <article id="offer-card-${D.escHtml(o.id)}" class="rounded-3xl ${state.sharedOfferId === o.id ? 'border-2 border-[#0D6857] ring-4 ring-emerald-200/70 shadow-lg' : cardBorder} bg-white p-4 space-y-3 transition">
-          <div class="flex items-center justify-between gap-2">
-            <div class="flex flex-wrap items-center gap-1.5 min-w-0">
-              ${topBadge}
-              ${hasDiscount ? '<span class="inline-flex items-center gap-0.5 rounded-full bg-rose-600 px-2.5 py-1 text-[10px] font-black text-white shadow-sm">تخفيض الآن 🔥</span>' : ''}
-              ${isBroadcasting ? '<span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-1 text-[10px] font-black text-emerald-900">🟢 هنا الآن</span>' : ''}
-            </div>
-            ${dist ? `<span class="shrink-0 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-black text-[#0D6857]">📍 ${D.escHtml(dist)}</span>` : ''}
-          </div>
+        <article id="offer-card-${D.escHtml(o.id)}" class="rounded-3xl ${cardBorder} bg-white p-3.5 space-y-2.5 transition">
+          <div class="flex items-start gap-3">
+            ${thumbBlock}
+            <div class="flex-1 min-w-0 space-y-1">
+              <div class="flex items-start justify-between gap-2">
+                <h3 class="text-sm sm:text-base font-black text-[#132A23] leading-snug line-clamp-2">${D.escHtml(o.title)}</h3>
+                <div class="shrink-0 text-left">
+                  <span class="block text-sm sm:text-base font-black ${hasDiscount ? 'text-rose-700' : 'text-[#0D6857]'}">${D.escHtml(o.price)} د.ت</span>
+                  ${hasDiscount ? `<span class="block text-[10px] font-bold text-slate-400 line-through">${D.escHtml(o.prevPrice)} د.ت</span>` : ''}
+                </div>
+              </div>
 
-          <div class="space-y-1">
-            <h3 class="text-base sm:text-lg font-black text-[#132A23] leading-snug">${D.escHtml(o.title)}</h3>
-            <div class="flex flex-wrap items-center gap-1.5 text-xs font-bold text-slate-600">
-              <span class="text-[#132A23]">${D.escHtml(o.seller)}</span>
-              <span class="inline-flex items-center gap-0.5 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-800">✓ Google</span>
-              <span>• ${D.escHtml(o.gov)}</span>
-              <span class="text-amber-800">• ⏱️ ${D.escHtml(D.formatRemaining(o.expiresAt))}</span>
-            </div>
-          </div>
+              <div class="flex flex-wrap items-center gap-1 text-[11px] font-bold text-slate-600">
+                ${dist ? `<span class="text-[#0D6857] font-black">📍 ${D.escHtml(dist)}</span><span>•</span>` : ''}
+                <span>${D.escHtml(o.seller)}</span>
+                <span class="rounded-full bg-emerald-100 px-1.5 py-0.2 text-[9px] font-black text-emerald-800">✓ Google</span>
+              </div>
 
-          ${imgBlock}
-
-          <div class="rounded-2xl border-r-4 ${hasDiscount ? 'border-rose-500 bg-rose-50/50' : 'border-[#0D6857] bg-[#F7FAF9]'} px-3.5 py-2.5 space-y-1.5">
-            <div class="flex items-center justify-between gap-2">
-              <span class="text-xs font-extrabold text-slate-600">💰 السعر المطلوب</span>
-              <div class="flex items-center gap-2">
-                ${hasDiscount ? `<span class="text-xs font-bold text-slate-400 line-through">${D.escHtml(o.prevPrice)} د.ت</span>` : ''}
-                <span class="text-base sm:text-lg font-black ${hasDiscount ? 'text-rose-700' : 'text-[#0D6857]'}">${D.escHtml(o.price)} د.ت</span>
+              <div class="flex flex-wrap items-center gap-1 pt-0.5">
+                ${isClosest ? '<span class="rounded-full bg-amber-100 border border-amber-200 px-2 py-0.5 text-[10px] font-black text-amber-900">⭐ الأقرب</span>' : `<span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700">${cat.icon} ${D.escHtml(cat.label)}</span>`}
+                ${hasDiscount ? '<span class="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-black text-white">🔥 تخفيض</span>' : ''}
+                ${isBroadcasting ? '<span class="rounded-full bg-emerald-100 border border-emerald-300 px-2 py-0.5 text-[10px] font-black text-emerald-900">🟢 هنا الآن</span>' : ''}
+                <span class="text-[10px] font-bold text-amber-800">⏱️ ${D.escHtml(D.formatRemaining(o.expiresAt))}</span>
               </div>
             </div>
-            ${o.desc ? `<p class="text-xs font-semibold text-slate-700 leading-relaxed pt-1 border-t border-slate-200/70">${D.escHtml(o.desc)}</p>` : ''}
           </div>
 
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-0.5">
-            ${ph ? `<a href="tel:+216${ph}" class="flex items-center justify-center gap-1 rounded-xl bg-[#0D6857] hover:bg-[#094D40] py-2.5 px-2 text-xs font-extrabold text-white transition"><span>📞</span><span>اتصال</span></a>` : '<span></span>'}
-            ${ph ? `<a href="https://wa.me/216${ph}?text=${encodeURIComponent('مرحباً، بخصوص عرضك على خوذ بايك: ' + o.title)}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 py-2.5 px-2 text-xs font-extrabold text-white transition"><span>💬</span><span>واتساب</span></a>` : '<span></span>'}
-            <button type="button" data-focus-map="market:${D.escHtml(o.id)}" class="flex items-center justify-center gap-1 rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] hover:bg-emerald-50 py-2.5 px-2 text-xs font-extrabold text-[#132A23] transition"><span>🗺️</span><span>الخريطة</span></button>
-            ${mapsDirUrl ? `<a href="${D.escHtml(mapsDirUrl)}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl bg-blue-700 hover:bg-blue-800 py-2.5 px-2 text-xs font-extrabold text-white transition"><span>🧭</span><span>قوقل ماب</span></a>` : '<span></span>'}
+          ${o.desc ? `<p class="rounded-xl bg-[#F8FAF9] px-3 py-1.5 text-[11px] font-semibold text-slate-700 leading-relaxed">${D.escHtml(o.desc)}</p>` : ''}
+
+          <div class="grid grid-cols-4 gap-1.5">
+            ${ph ? `<a href="tel:+216${ph}" class="flex items-center justify-center gap-1 rounded-xl bg-[#0D6857] hover:bg-[#094D40] py-2 px-1.5 text-[11px] font-extrabold text-white transition"><span>📞</span><span>اتصال</span></a>` : '<span></span>'}
+            ${ph ? `<a href="https://wa.me/216${ph}?text=${encodeURIComponent('مرحباً، بخصوص عرضك على خوذ بايك: ' + o.title)}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 py-2 px-1.5 text-[11px] font-extrabold text-white transition"><span>💬</span><span>واتساب</span></a>` : '<span></span>'}
+            <button type="button" data-focus-map="market:${D.escHtml(o.id)}" class="flex items-center justify-center gap-1 rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] hover:bg-emerald-50 py-2 px-1.5 text-[11px] font-extrabold text-[#132A23] transition"><span>🗺️</span><span>خريطة</span></button>
+            ${mapsDirUrl ? `<a href="${D.escHtml(mapsDirUrl)}" target="_blank" rel="noopener" class="flex items-center justify-center gap-1 rounded-xl bg-blue-700 hover:bg-blue-800 py-2 px-1.5 text-[11px] font-extrabold text-white transition"><span>🧭</span><span>ماب</span></a>` : '<span></span>'}
           </div>
 
-          <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-[11px] font-extrabold">
+          <div class="flex flex-wrap items-center justify-between gap-1.5 pt-1.5 border-t border-slate-100 text-[10px] font-extrabold">
             <div class="flex items-center gap-1.5">
-              <button type="button" data-share-offer="${D.escHtml(o.id)}" class="rounded-xl bg-slate-100 hover:bg-slate-200 px-3 py-1.5 text-slate-700 transition">📤 مشاركة</button>
-              <button type="button" data-report-offer="${D.escHtml(o.id)}" class="rounded-xl bg-rose-50 hover:bg-rose-100 px-3 py-1.5 text-rose-700 transition">🚩 إبلاغ</button>
+              <button type="button" data-share-offer="${D.escHtml(o.id)}" class="rounded-lg bg-slate-100 hover:bg-slate-200 px-2.5 py-1 text-slate-700 transition">📤 مشاركة</button>
+              <button type="button" data-report-offer="${D.escHtml(o.id)}" class="rounded-lg bg-rose-50 hover:bg-rose-100 px-2.5 py-1 text-rose-700 transition">🚩 إبلاغ</button>
             </div>
             ${owner ? `
               <div class="flex flex-wrap items-center gap-1">
-                <button type="button" data-live-loc-offer="${D.escHtml(o.id)}" class="rounded-xl ${state.liveOfferId === o.id ? 'bg-rose-600 text-white' : 'bg-emerald-100 text-emerald-900 border border-emerald-300'} px-2.5 py-1.5 transition">
+                <button type="button" data-live-loc-offer="${D.escHtml(o.id)}" class="rounded-lg ${state.liveOfferId === o.id ? 'bg-rose-600 text-white' : 'bg-emerald-100 text-emerald-900 border border-emerald-300'} px-2 py-1 transition">
                   ${state.liveOfferId === o.id ? '⏹️ إيقاف البث' : '📍 أنا هنا الآن'}
                 </button>
-                <button type="button" data-edit-price-offer="${D.escHtml(o.id)}" class="rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1.5 text-blue-900 transition">🏷️ السعر</button>
-                <button type="button" data-mark-sold="${D.escHtml(o.id)}" class="rounded-xl bg-amber-100 hover:bg-amber-200 border border-amber-300 px-2.5 py-1.5 text-amber-950 transition">✅ تم البيع</button>
+                <button type="button" data-edit-price-offer="${D.escHtml(o.id)}" class="rounded-lg bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-1 text-blue-900 transition">🏷️ السعر</button>
+                <button type="button" data-mark-sold="${D.escHtml(o.id)}" class="rounded-lg bg-amber-100 hover:bg-amber-200 border border-amber-300 px-2 py-1 text-amber-950 transition">✅ تم البيع</button>
               </div>
             ` : ''}
           </div>
@@ -1184,6 +1179,19 @@
   });
 
   document.addEventListener('click', async (e) => {
+    const qCat = e.target.closest('[data-quick-cat]');
+    if (qCat) {
+      state.marketCat = qCat.dataset.quickCat;
+      state.showMarketCatGrid = false;
+      state.showFavsOnly = false;
+      state.showFavsPanel = false;
+      state.marketLimit = 15;
+      switchTab('market');
+      renderCategoryBars();
+      renderMarket();
+      return;
+    }
+
     const navBtn = e.target.closest('[data-tab]');
     if (navBtn) return switchTab(navBtn.dataset.tab);
 
