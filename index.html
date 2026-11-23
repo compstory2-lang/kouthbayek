@@ -423,7 +423,7 @@
   <div id="offerModal" class="hidden fixed inset-0 z-50 kb-modal-backdrop flex items-end sm:items-center justify-center p-2 sm:p-4">
     <div class="w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl bg-white p-4 shadow-2xl space-y-3">
       <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
-        <h3 class="text-base font-black text-[#0D6857]">🧺 نشر عرض جديد (يُحذف تلقائياً بعد 24 ساعة)</h3>
+        <h3 class="text-base font-black text-[#0D6857]">🧺 نشر عرض جديد (24س للمأكولات • 3 أيام لغير المأكولات)</h3>
         <button type="button" data-close-modal="offerModal" class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">✕</button>
       </div>
       <form id="offerForm" class="space-y-3">
@@ -451,7 +451,8 @@
         <div>
           <label for="ofDurationHours" class="block text-xs font-extrabold text-slate-700 mb-1">⏱️ مدة العرض (يُحذف تلقائياً عند الانتهاء)</label>
           <select id="ofDurationHours" class="w-full rounded-xl border border-[#DCE4E1] bg-[#F8FAF9] px-3 py-2 text-xs font-bold outline-none focus:border-[#0D6857]">
-            <option value="24">🕒 24 ساعة (المدة القياسية)</option>
+            <option value="72">📅 3 أيام / 72 ساعة (للبضائع غير المأكولة)</option>
+            <option value="24">🕒 24 ساعة (المدة القياسية للمأكولات)</option>
             <option value="12">⚡ 12 ساعة (عرض يومي سريع)</option>
             <option value="6">⚡ 6 ساعات (بائع متجول / نصبة)</option>
             <option value="4">⚡ 4 ساعات (عرض سريع)</option>
@@ -635,7 +636,7 @@
         <p><strong>1. طبيعة المنصة:</strong> «خوذ بايك» هي <strong>مبادرة فردية مجانية غير ربحية</strong> تقتصر على دور الوسيط التقني للربط بين المواطنين والحرفيين وأصحاب العروض في الولايات الـ 24، ولا تتدخل في البيع أو الشراء أو الاتفاقات المالية.</p>
         <p><strong>2. شرعية المعروضات وإخلاء المسؤولية:</strong> يتحمل الناشر وحده كامل المسؤولية المدنية والجزائية عن معروضاته، ولا تتحمل المنصة أي مسؤولية إذا تبيّن أن السلعة <strong>مسروقة أو مقلّدة أو مجهولة المصدر أو مخالفة للقانون التونسي</strong>.</p>
         <p><strong>3. الرقابة الذاتية والتبليغ:</strong> يُمنع نشر الخمور والممنوعات والألفاظ السوقية أو نشر أرقام هواتف الغير دون إذن. تحتفظ الإدارة بحق الحذف الفوري، كما يُخفى تلقائياً أي إعلان يتلقى 3 بلاغات.</p>
-        <p><strong>4. صلاحية الإعلانات:</strong> تُحذف كل إعلانات البيع والشراء تلقائياً بعد <strong>24 ساعة</strong> (أو المدة الأقصر المختارة)، ويمكن إغلاقها فوراً بزر «تم البيع».</p>
+        <p><strong>4. صلاحية الإعلانات:</strong> تُحذف إعلانات المأكولات تلقائياً بعد <strong>24 ساعة</strong>، وتبقى البضائع غير المأكولة لمدة <strong>3 أيام</strong> ثم تختفي تلقائياً (أو تختفي بعد <strong>ساعة واحدة</strong> من الضغط على زر «تم البيع»).</p>
         <p><strong>5. الصيانة العاجلة:</strong> خدمة للصيانة المستعجلة فقط ولا تغني عن أرقام النجدة الرسمية: الحماية المدنية (<strong>198</strong>)، الشرطة (<strong>197</strong>)، الحرس الوطني (<strong>193</strong>)، والإسعاف (<strong>190</strong>).</p>
         <div class="pt-1 flex flex-col gap-2">
           <a href="./privacy.html" class="font-black text-[#0D6857] underline">🔒 قراءة سياسة حماية المعطيات الشخصية الكاملة (القانون عدد 63 لسنة 2004)</a>
@@ -696,6 +697,15 @@
           <span class="text-[10px] font-bold text-slate-500" dir="ltr">compstory2-lang.github.io/kouthbayek</span>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL: IMAGE ZOOM -->
+  <div id="imgZoomModal" class="hidden fixed inset-0 z-[70] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div class="relative w-full max-w-md rounded-3xl bg-white p-2.5 shadow-2xl space-y-2 text-center">
+      <button type="button" data-close-modal="imgZoomModal" aria-label="إغلاق" class="absolute top-4 left-4 z-10 rounded-full bg-black/70 hover:bg-black/90 px-3 py-1 text-xs font-black text-white shadow">✕ إغلاق</button>
+      <img id="imgZoomTarget" src="" alt="" class="max-h-[72vh] w-full rounded-2xl object-contain bg-slate-50" />
+      <p id="imgZoomCaption" class="px-2 pb-1 text-xs font-black text-[#132A23] truncate"></p>
     </div>
   </div>
 
