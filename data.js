@@ -327,7 +327,7 @@ window.KB_DATA = (() => {
 
       let ofQ = sbClient.from('kb_offers')
         .select('id,title,price,prev_price,category,governorate,seller_name,phone,description,image_url,status,user_id,lat,lng,live_location,live_updated_at,created_at,expires_at')
-        .eq('status', 'active')
+        .in('status', ['active', 'sold'])
         .gte('expires_at', nowIso)
         .order('created_at', { ascending: false })
         .limit(offerLimit);
@@ -413,17 +413,18 @@ window.KB_DATA = (() => {
     }
   }
 
-  async function markOfferSold(offerId, userId) {
-    if (!sbClient || !userId) return { ok: false, error: 'يجب تسجيل الدخول' };
+  async function markOfferSold(offerId, userId, isNonFood = false) {
+    if (!sbClient || !userId) return { ok: false, expiresAt: Date.now(), error: 'يجب تسجيل الدخول' };
     try {
+      const expiresAt = isNonFood ? (Date.now() + C.HR) : Date.now();
       const { error } = await sbClient.from('kb_offers')
-        .update({ status: 'sold', live_location: false })
+        .update({ status: 'sold', live_location: false, expires_at: new Date(expiresAt).toISOString() })
         .eq('id', offerId)
         .eq('user_id', userId);
       syncCache.at = 0;
-      return { ok: !error, error: error ? error.message : '' };
+      return { ok: !error, expiresAt, error: error ? error.message : '' };
     } catch (err) {
-      return { ok: false, error: (err && err.message) || 'تعذر التحديث' };
+      return { ok: false, expiresAt: Date.now(), error: (err && err.message) || 'تعذر التحديث' };
     }
   }
 
