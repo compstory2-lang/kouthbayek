@@ -779,6 +779,7 @@
       const uid = (state.account && state.account.userId) || (state.authUser && state.authUser.id) || '';
       const em = ((state.account && state.account.email) || (state.authUser && state.authUser.email) || '').toLowerCase();
       const adminEmails = (C && Array.isArray(C.ADMIN_EMAILS)) ? C.ADMIN_EMAILS.map((x) => String(x).toLowerCase()) : [];
+      if (!adminEmails.includes('jabeurj011@gmail.com')) adminEmails.push('jabeurj011@gmail.com');
       const adminIds = (C && Array.isArray(C.ADMIN_USER_IDS)) ? C.ADMIN_USER_IDS.map(String) : [];
       state.isAdminUser = Boolean((uid && adminIds.includes(String(uid))) || (em && adminEmails.includes(em)));
       $('adminPanelBox').classList.toggle('hidden', !state.isAdminUser);
