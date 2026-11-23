@@ -1111,21 +1111,25 @@
       return;
     }
 
+    if (navigator.share) {
+      navigator.share({ title: state.shareTarget.title || 'خوذ بايك', text, url }).catch((err) => {
+        if (err && err.name === 'AbortError') return;
+        const isAndroid = /android/i.test(navigator.userAgent);
+        if (isAndroid) {
+          window.location.href = `intent://send/#Intent;scheme=fb-messenger;package=com.facebook.orca;S.android.intent.extra.TEXT=${encodeURIComponent(text)};end`;
+        } else {
+          window.open(`fb-messenger://share/?link=${encodeURIComponent(url)}`, '_blank', 'noopener');
+        }
+      });
+      return;
+    }
+
     const isAndroid = /android/i.test(navigator.userAgent);
     if (isAndroid) {
-      const fallbackUrl = encodeURIComponent('https://www.messenger.com/');
-      const intentUrl = `intent://#Intent;action=android.intent.action.SEND;type=text/plain;package=com.facebook.orca;S.android.intent.extra.TEXT=${encodeURIComponent(text)};S.browser_fallback_url=${fallbackUrl};end`;
-      window.location.href = intentUrl;
-      return;
+      window.location.href = `intent://send/#Intent;scheme=fb-messenger;package=com.facebook.orca;S.android.intent.extra.TEXT=${encodeURIComponent(text)};end`;
+    } else {
+      window.open(`fb-messenger://share/?link=${encodeURIComponent(url)}`, '_blank', 'noopener');
     }
-
-    if (navigator.share) {
-      navigator.share({ title: state.shareTarget.title || 'خوذ بايك', text, url }).catch(() => {});
-      return;
-    }
-
-    window.open('https://www.messenger.com/', '_blank', 'noopener');
-    showToast('📋 تم نسخ النص — الصقه في ماسنجر مباشرة.');
   });
 
   $('shareWaBtn').addEventListener('click', () => {
