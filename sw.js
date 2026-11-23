@@ -1,5 +1,5 @@
-// خوذ بايك — Service Worker v1.5.27 (حماية المعطيات + مراسلة الإدارة + تخزين الردود السليمة فقط)
-const CACHE_NAME = 'khouz-bayek-v1.5.27';
+// خوذ بايك — Service Worker v1.5.28 (حماية المعطيات + مراسلة الإدارة + تخزين الردود السليمة فقط)
+const CACHE_NAME = 'khouz-bayek-v1.5.28';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -15,7 +15,17 @@ const CORE_ASSETS = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(async (cache) => {
+      for (const asset of CORE_ASSETS) {
+        try {
+          const resp = await fetch(asset, { cache: 'no-store' });
+          if (resp && resp.ok) {
+            await cache.put(asset, resp);
+          }
+        } catch (_) {}
+      }
+      return self.skipWaiting();
+    })
   );
 });
 
