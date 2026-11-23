@@ -404,13 +404,13 @@
       const owner = isOfferOwner(o);
       const isClosest = idx === 0 && state.marketSort === 'nearest';
       const hasDiscount = Number.isFinite(o.prevPrice) && o.prevPrice > Number(o.price);
+      const isSold = o.status === 'sold';
       const isBroadcasting = state.liveOfferId === o.id || Boolean(o.liveLocation);
       const cardBorder = isSold
         ? 'border border-rose-200 bg-rose-50/25 opacity-90 shadow-sm'
         : (state.sharedOfferId === o.id
           ? 'border-2 border-[#0D6857] ring-4 ring-emerald-200/70 shadow-lg'
           : (isClosest ? 'border-2 border-amber-400/90 shadow-md' : 'border border-[#E2EAE7] shadow-sm'));
-      const isSold = o.status === 'sold';
       const thumbBlock = o.imageUrl
         ? `<button type="button" data-zoom-img="${D.escHtml(o.imageUrl)}" data-zoom-title="${D.escHtml(o.title)}" class="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-[#EAE5D8] bg-slate-100 cursor-zoom-in group focus:outline-none">
              <img src="${D.escHtml(o.imageUrl)}" alt="${D.escHtml(o.title)}" loading="lazy" decoding="async" class="h-full w-full object-cover transition duration-200 group-hover:scale-105" />
