@@ -1,5 +1,5 @@
-// خوذ بايك — Service Worker v1.5.24 (حماية المعطيات + مراسلة الإدارة + تخزين الردود السليمة فقط)
-const CACHE_NAME = 'khouz-bayek-v1.5.24';
+// خوذ بايك — Service Worker v1.5.27 (حماية المعطيات + مراسلة الإدارة + تخزين الردود السليمة فقط)
+const CACHE_NAME = 'khouz-bayek-v1.5.27';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -9,6 +9,7 @@ const CORE_ASSETS = [
   './map.js',
   './privacy.js',
   './app.js',
+  './admin.js',
   './privacy.html'
 ];
 
