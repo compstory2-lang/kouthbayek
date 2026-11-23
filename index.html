@@ -11,41 +11,38 @@
 </head>
 <body>
 
-  <!-- Top Teal-Green Rounded Header -->
-  <header class="kb-header sticky top-0 z-30 rounded-b-3xl shadow-lg">
-    <div class="mx-auto max-w-2xl px-3.5 pt-3 pb-3.5 space-y-2.5">
-      <!-- Brand + Quick Actions Row -->
+  <!-- Top Teal-Green Rounded Header (Design 6: Glovo / Tayara Pro Compact) -->
+  <header class="kb-header sticky top-0 z-30 shadow-lg">
+    <div class="mx-auto max-w-2xl px-3.5 pt-2.5 pb-3 space-y-2">
       <div class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2.5 min-w-0">
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/15 border border-white/25 text-xl shadow-sm">🧺</div>
-          <div class="min-w-0">
-            <div class="flex items-center gap-1.5">
-              <h1 class="text-base sm:text-lg font-black tracking-tight text-white leading-none">خوذ بايك</h1>
-              <span class="shrink-0 rounded-full bg-emerald-300/20 border border-emerald-200/30 px-2 py-0.5 text-[10px] font-black text-emerald-50 whitespace-nowrap">24 ولاية • مجاني</span>
-            </div>
+        <div class="flex items-center gap-2 min-w-0">
+          <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 border border-white/25 text-lg shadow-sm">🧺</div>
+          <div class="min-w-0 flex items-center gap-1.5">
+            <h1 class="text-base sm:text-lg font-black tracking-tight text-white leading-none">خوذ بايك</h1>
+            <span class="shrink-0 rounded-full bg-emerald-300/20 border border-emerald-200/30 px-2 py-0.5 text-[10px] font-black text-emerald-50 whitespace-nowrap">24 ولاية</span>
           </div>
         </div>
         <div class="flex items-center gap-1.5 shrink-0">
-          <button id="openInstallModalBtn" type="button" class="inline-flex items-center gap-1 rounded-xl bg-amber-400 hover:bg-amber-300 text-[#132A23] px-2.5 py-1.5 text-xs font-black shadow-sm transition whitespace-nowrap">
+          <button id="openInstallModalBtn" type="button" class="inline-flex items-center gap-1 rounded-full bg-amber-400 hover:bg-amber-300 text-[#132A23] px-2.5 py-1 text-[11px] font-black shadow-sm transition whitespace-nowrap">
             <span>📲</span><span>تنزيل</span>
           </button>
-          <button id="openTermsBtn" type="button" class="inline-flex items-center gap-1 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 px-2.5 py-1.5 text-xs font-extrabold text-white transition whitespace-nowrap">
+          <button id="openTermsBtn" type="button" class="inline-flex items-center gap-1 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 px-2.5 py-1 text-[11px] font-extrabold text-white transition whitespace-nowrap">
             <span>⚖️</span><span>الشروط</span>
           </button>
-          <a href="./privacy.html" title="سياسة الخصوصية" class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-sm transition">🔒</a>
+          <a href="./privacy.html" title="سياسة الخصوصية" class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/15 hover:bg-white/25 border border-white/20 text-xs transition">🔒</a>
         </div>
       </div>
 
-      <!-- Location & Scope Control Bar -->
-      <div class="rounded-2xl bg-black/15 border border-white/15 p-2 space-y-2">
-        <div class="grid grid-cols-2 gap-2">
-          <div class="relative">
+      <!-- Compact Location & Scope Bar -->
+      <div class="rounded-2xl bg-black/15 border border-white/15 p-1.5 space-y-1.5">
+        <div class="grid grid-cols-2 gap-1.5">
+          <div>
             <label for="govSelect" class="sr-only">اختر الولاية</label>
-            <select id="govSelect" class="w-full rounded-xl bg-white px-3 py-2 text-xs sm:text-sm font-black text-[#132A23] shadow-sm outline-none"></select>
+            <select id="govSelect" class="w-full rounded-xl bg-white px-2.5 py-1.5 text-xs font-black text-[#132A23] shadow-sm outline-none"></select>
           </div>
-          <div class="relative">
+          <div>
             <label for="radiusSelect" class="sr-only">نطاق البحث</label>
-            <select id="radiusSelect" class="w-full rounded-xl bg-white px-3 py-2 text-xs sm:text-sm font-black text-[#132A23] shadow-sm outline-none">
+            <select id="radiusSelect" class="w-full rounded-xl bg-white px-2.5 py-1.5 text-xs font-black text-[#132A23] shadow-sm outline-none">
               <option value="gov">📍 في ولايتي فقط</option>
               <option value="15">ضمن 15 كم</option>
               <option value="50">ضمن 50 كم</option>
@@ -54,11 +51,11 @@
             </select>
           </div>
         </div>
-        <div class="flex items-center justify-between gap-2 pt-0.5">
-          <button id="geoBtn" type="button" class="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 active:scale-95 px-3 py-1.5 text-xs font-black text-[#132A23] shadow-sm transition whitespace-nowrap">
+        <div class="flex items-center justify-between gap-2 px-0.5">
+          <button id="geoBtn" type="button" class="inline-flex items-center gap-1 rounded-full bg-amber-400 hover:bg-amber-300 active:scale-95 px-3 py-1 text-[11px] font-black text-[#132A23] shadow-sm transition whitespace-nowrap">
             <span>🎯</span><span>تحديد موقعي GPS</span>
           </button>
-          <span id="syncBadge" class="inline-flex items-center gap-1 rounded-full bg-white/12 px-2.5 py-1 text-[10px] font-bold text-emerald-50 whitespace-nowrap">
+          <span id="syncBadge" class="inline-flex items-center gap-1 rounded-full bg-white/12 px-2.5 py-0.5 text-[10px] font-bold text-emerald-50 whitespace-nowrap">
             <span class="h-1.5 w-1.5 rounded-full bg-emerald-300"></span>
             <span>متصل بـ Supabase</span>
           </span>
@@ -79,6 +76,26 @@
           <input id="marketSearch" type="search" autocomplete="off" placeholder="ابحث عن خضر، لحم، سردينة، جبن، سيارة..." class="w-full rounded-2xl border border-[#DCE4E1] bg-white py-2.5 pr-9 pl-3 text-xs sm:text-sm font-bold text-[#132A23] placeholder:text-slate-400 outline-none focus:border-[#0D6857]" />
         </div>
         <button id="openOfferModalBtn" type="button" class="shrink-0 rounded-2xl bg-[#0D6857] hover:bg-[#094D40] active:scale-95 px-3.5 py-2.5 text-xs sm:text-sm font-black text-white shadow-sm transition">+ أضف عرضاً</button>
+      </div>
+
+      <!-- Top 4 Circular Quick-Action Orbs (Design 6: Glovo / Tayara Pro) -->
+      <div class="grid grid-cols-4 gap-2 text-center pt-0.5">
+        <button type="button" data-quick-cat="produce" class="kb-orb-btn flex flex-col items-center gap-1">
+          <div class="kb-orb bg-emerald-50 border border-emerald-200">🥬</div>
+          <span class="text-[11px] font-black text-[#132A23]">خضر</span>
+        </button>
+        <button type="button" data-quick-cat="fish" class="kb-orb-btn flex flex-col items-center gap-1">
+          <div class="kb-orb bg-sky-50 border border-sky-200">🐟</div>
+          <span class="text-[11px] font-black text-[#132A23]">حوت</span>
+        </button>
+        <button type="button" data-tab="crafts" class="kb-orb-btn flex flex-col items-center gap-1">
+          <div class="kb-orb bg-amber-50 border border-amber-200">🛠️</div>
+          <span class="text-[11px] font-black text-[#132A23]">حرفي</span>
+        </button>
+        <button type="button" data-tab="emergency" class="kb-orb-btn flex flex-col items-center gap-1">
+          <div class="kb-orb bg-rose-50 border border-rose-200">⚡</div>
+          <span class="text-[11px] font-black text-rose-800">عاجل</span>
+        </button>
       </div>
 
       <!-- Market View Toggle (All / Categories / Favorites / Filters) -->
@@ -317,29 +334,29 @@
     </section>
   </main>
 
-  <!-- Fixed 5-Tab Bottom Navigation -->
-  <nav class="fixed bottom-0 inset-x-0 z-40 border-t border-[#E4EAE8] bg-white/95 backdrop-blur shadow-[0_-4px_18px_rgba(0,0,0,0.06)]">
-    <div class="mx-auto grid max-w-2xl grid-cols-5 px-1 pt-2 pb-2.5 text-center">
-      <button type="button" data-tab="market" class="kb-nav-btn active flex flex-col items-center gap-0.5 text-slate-500">
-        <span class="text-xl leading-none">🧺</span>
-        <span class="text-[11px] font-extrabold">خوذ بايك</span>
+  <!-- Fixed 5-Tab Bottom Navigation (Circular Colored Orbs Matching Top Bar) -->
+  <nav class="fixed bottom-0 inset-x-0 z-40 border-t border-[#E2EAE7] bg-white/95 backdrop-blur shadow-[0_-6px_20px_rgba(0,0,0,0.06)]">
+    <div class="mx-auto grid max-w-2xl grid-cols-5 px-1 pt-1.5 pb-2 text-center">
+      <button type="button" data-tab="market" class="kb-nav-btn active flex flex-col items-center gap-1 text-slate-600">
+        <span class="kb-nav-orb bg-emerald-50 border-emerald-200">🧺</span>
+        <span class="text-[10px] font-extrabold leading-none">السوق</span>
       </button>
-      <button type="button" data-tab="emergency" class="kb-nav-btn relative flex flex-col items-center gap-0.5 text-slate-500">
-        <span class="text-xl leading-none">⚡</span>
-        <span class="text-[10px] font-extrabold leading-tight">صيانة عاجلة</span>
-        <span id="navEmergBadge" class="absolute -top-0.5 left-1/2 translate-x-2 rounded-full bg-rose-600 px-1.5 text-[9px] font-black text-white">0</span>
+      <button type="button" data-tab="emergency" class="kb-nav-btn relative flex flex-col items-center gap-1 text-slate-600">
+        <span class="kb-nav-orb bg-rose-50 border-rose-200">⚡</span>
+        <span class="text-[10px] font-extrabold leading-none">عاجلة</span>
+        <span id="navEmergBadge" class="absolute -top-0.5 left-1/2 translate-x-2.5 rounded-full bg-rose-600 px-1.5 text-[9px] font-black text-white shadow-sm">0</span>
       </button>
-      <button type="button" data-tab="crafts" class="kb-nav-btn flex flex-col items-center gap-0.5 text-slate-500">
-        <span class="text-xl leading-none">🛠️</span>
-        <span class="text-[11px] font-extrabold">الحرفيين</span>
+      <button type="button" data-tab="crafts" class="kb-nav-btn flex flex-col items-center gap-1 text-slate-600">
+        <span class="kb-nav-orb bg-amber-50 border-amber-200">🛠️</span>
+        <span class="text-[10px] font-extrabold leading-none">الحرفيين</span>
       </button>
-      <button type="button" data-tab="map" class="kb-nav-btn flex flex-col items-center gap-0.5 text-slate-500">
-        <span class="text-xl leading-none">🗺️</span>
-        <span class="text-[11px] font-extrabold">الخريطة</span>
+      <button type="button" data-tab="map" class="kb-nav-btn flex flex-col items-center gap-1 text-slate-600">
+        <span class="kb-nav-orb bg-sky-50 border-sky-200">🗺️</span>
+        <span class="text-[10px] font-extrabold leading-none">الخريطة</span>
       </button>
-      <button type="button" data-tab="account" class="kb-nav-btn flex flex-col items-center gap-0.5 text-slate-500">
-        <span class="text-xl leading-none">👤</span>
-        <span class="text-[11px] font-extrabold">حسابي</span>
+      <button type="button" data-tab="account" class="kb-nav-btn flex flex-col items-center gap-1 text-slate-600">
+        <span class="kb-nav-orb bg-slate-100 border-slate-200">👤</span>
+        <span class="text-[10px] font-extrabold leading-none">حسابي</span>
       </button>
     </div>
   </nav>
