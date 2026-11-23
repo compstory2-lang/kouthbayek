@@ -1,4 +1,4 @@
-// خوذ بايك — وحدة لوحة الإدارة الكاملة (admin.js: الرسائل الإدارية، البلاغات، توثيق الحرفيين/الباتيندا، إدارة العروض)
+// خوذ بايك — وحدة لوحة الإدارة الكاملة (admin.js: المسجّلين، الرسائل الإدارية، البلاغات، توثيق الحرفيين/الباتيندا، إدارة العروض)
 (() => {
   'use strict';
 
@@ -10,6 +10,7 @@
   let adminState = {
     isAdmin: false,
     activeSubTab: 'messages',
+    accounts: [],
     messages: [],
     reports: [],
     craftsmen: [],
@@ -94,13 +95,15 @@
     renderAdminPanel();
 
     try {
-      const [msgRes, repRes, crRes, ofRes] = await Promise.all([
+      const [accRes, msgRes, repRes, crRes, ofRes] = await Promise.all([
+        sb.from('kb_accounts').select('user_id,display_name,role,phone,governorate,created_at').order('created_at', { ascending: false }).limit(200),
         sb.from('kb_messages').select('*').order('created_at', { ascending: false }).limit(50),
         sb.from('kb_reports').select('*').order('created_at', { ascending: false }).limit(50),
         sb.from('kb_craftsmen').select('*').order('created_at', { ascending: false }).limit(100),
         sb.from('kb_offers').select('*').eq('status', 'active').order('created_at', { ascending: false }).limit(100)
       ]);
 
+      adminState.accounts = (!accRes.error && Array.isArray(accRes.data)) ? accRes.data : [];
       adminState.messages = (!msgRes.error && Array.isArray(msgRes.data)) ? msgRes.data : [];
       adminState.reports = (!repRes.error && Array.isArray(repRes.data)) ? repRes.data : [];
       adminState.craftsmen = (!crRes.error && Array.isArray(crRes.data)) ? crRes.data : [];
@@ -119,7 +122,7 @@
 
     const statsEl = $('adminStatsTxt');
     if (statsEl) {
-      statsEl.textContent = `✉️ ${adminState.messages.length} رسالة • 🚩 ${adminState.reports.length} بلاغ • 🛠️ ${adminState.craftsmen.length} حرفي • 🧺 ${adminState.offers.length} عرض نشط`;
+      statsEl.textContent = `👥 ${adminState.accounts.length} مسجل • ✉️ ${adminState.messages.length} رسالة • 🚩 ${adminState.reports.length} بلاغ • 🛠️ ${adminState.craftsmen.length} حرفي • 🧺 ${adminState.offers.length} عرض`;
     }
 
     const bodyEl = $('adminPanelContent');
@@ -128,12 +131,66 @@
     document.querySelectorAll('[data-admin-subtab]').forEach((btn) => {
       const active = btn.dataset.adminSubtab === adminState.activeSubTab;
       btn.className = active
-        ? 'rounded-xl bg-[#0D6857] text-white px-2.5 py-2 text-[11px] font-black transition'
-        : 'rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 px-2.5 py-2 text-[11px] font-extrabold transition';
+        ? 'rounded-xl bg-[#0D6857] text-white px-1.5 py-2 text-[10px] font-black transition'
+        : 'rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 px-1.5 py-2 text-[10px] font-extrabold transition';
     });
 
     if (adminState.loading) {
       bodyEl.innerHTML = '<p class="text-center text-xs font-bold text-slate-500 py-4">⏳ جاري تحميل بيانات الإدارة من Supabase...</p>';
+      return;
+    }
+
+    // 0) إحصائيات المسجّلين (مواطنين، أصحاب مهن، أصحاب نصب)
+    if (adminState.activeSubTab === 'accounts') {
+      const totalAcc = adminState.accounts.length;
+      const craftsAcc = adminState.accounts.filter((a) => a.role === 'craftsman').length;
+      const advAcc = adminState.accounts.filter((a) => a.role === 'advertiser').length;
+      const citizensAcc = Math.max(0, totalAcc - craftsAcc - advAcc);
+
+      const summaryHtml = `
+        <div class="grid grid-cols-2 gap-2 pb-2">
+          <div class="rounded-2xl bg-emerald-50 border border-emerald-200 p-2.5 text-center">
+            <div class="text-lg font-black text-[#0D6857]">${totalAcc}</div>
+            <div class="text-[11px] font-extrabold text-emerald-900">👥 العدد الجملي للمسجّلين</div>
+          </div>
+          <div class="rounded-2xl bg-amber-50 border border-amber-200 p-2.5 text-center">
+            <div class="text-lg font-black text-amber-900">${craftsAcc}</div>
+            <div class="text-[11px] font-extrabold text-amber-900">🛠️ أصحاب المهن (حرفيون)</div>
+          </div>
+          <div class="rounded-2xl bg-sky-50 border border-sky-200 p-2.5 text-center">
+            <div class="text-lg font-black text-sky-900">${advAcc}</div>
+            <div class="text-[11px] font-extrabold text-sky-900">🧺 أصحاب النصب والمعلنين</div>
+          </div>
+          <div class="rounded-2xl bg-slate-100 border border-slate-200 p-2.5 text-center">
+            <div class="text-lg font-black text-slate-800">${citizensAcc}</div>
+            <div class="text-[11px] font-extrabold text-slate-700">🙋 مواطنون (تصفح/طوارئ)</div>
+          </div>
+        </div>
+      `;
+
+      if (!totalAcc) {
+        bodyEl.innerHTML = summaryHtml + '<p class="text-center text-xs font-bold text-slate-400 py-2">لا توجد حسابات ظاهرة — تأكد من تنفيذ سياسة قراءة الأدمن على kb_accounts.</p>';
+        return;
+      }
+
+      const listHtml = adminState.accounts.map((a) => {
+        const roleBadge = a.role === 'craftsman'
+          ? '<span class="rounded-full bg-amber-100 text-amber-900 px-2 py-0.5 text-[10px] font-black">🛠️ حرفي</span>'
+          : (a.role === 'advertiser'
+            ? '<span class="rounded-full bg-emerald-100 text-emerald-900 px-2 py-0.5 text-[10px] font-black">🧺 نصبة / معلن</span>'
+            : '<span class="rounded-full bg-slate-200 text-slate-800 px-2 py-0.5 text-[10px] font-black">🙋 مواطن</span>');
+        return `
+          <div class="rounded-2xl border border-slate-200 bg-[#F8FAF9] p-2.5 flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <div class="text-xs font-black text-[#132A23] truncate">${esc(a.display_name || 'مستخدم')}</div>
+              <div class="text-[10px] font-bold text-slate-500">📍 ${esc(a.governorate || '—')} • 📞 ${esc(a.phone || '—')} • ${esc(fmtDate(a.created_at))}</div>
+            </div>
+            ${roleBadge}
+          </div>
+        `;
+      }).join('');
+
+      bodyEl.innerHTML = summaryHtml + listHtml;
       return;
     }
 
