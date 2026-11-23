@@ -12,6 +12,9 @@ on:
       - 'capacitor.config.json'
       - '.github/workflows/build-android-apk.yml'
 
+permissions:
+  contents: write
+
 jobs:
   build-apk:
     runs-on: ubuntu-latest
@@ -44,7 +47,7 @@ jobs:
 
       - name: Apply Khouz Bayek Icon to Android
         run: |
-          python3 -c '
+          python3 - << 'PY'
           import shutil
           from pathlib import Path
           src = Path("icon-512.png")
@@ -57,31 +60,31 @@ jobs:
                   shutil.copyfile(src, target)
             bg = res / "values" / "ic_launcher_background.xml"
             if bg.exists():
-              bg.write_text("<?xml version=\"1.0\" encoding=\"utf-8\"?><resources><color name=\"ic_launcher_background\">#0D6857</color></resources>", encoding="utf-8")
+              bg.write_text('<?xml version="1.0" encoding="utf-8"?><resources><color name="ic_launcher_background">#0D6857</color></resources>', encoding="utf-8")
             print("Applied Khouz Bayek icon from", src)
-          '
+          PY
 
       - name: Configure Android permissions & Deep Link (tn.kouthbayek.app://callback)
         run: |
-          node -e '
-            const fs = require("fs");
-            const mf = "android/app/src/main/AndroidManifest.xml";
-            let xml = fs.readFileSync(mf, "utf8");
-            const perms = [
-              "android.permission.INTERNET",
-              "android.permission.ACCESS_FINE_LOCATION",
-              "android.permission.ACCESS_COARSE_LOCATION",
-              "android.permission.CAMERA"
-            ];
-            const ins = perms.filter((p) => !xml.includes(p)).map((p) => "    <uses-permission android:name=\"" + p + "\" />");
-            if (ins.length) xml = xml.replace("<application", ins.join("\n") + "\n\n    <application");
-            const deepLink = "\n            <intent-filter>\n                <action android:name=\"android.intent.action.VIEW\" />\n                <category android:name=\"android.intent.category.DEFAULT\" />\n                <category android:name=\"android.intent.category.BROWSABLE\" />\n                <data android:scheme=\"tn.kouthbayek.app\" android:host=\"callback\" />\n            </intent-filter>\n        </activity>";
-            if (!xml.includes("tn.kouthbayek.app")) {
-              xml = xml.replace("</activity>", deepLink);
-            }
-            fs.writeFileSync(mf, xml, "utf8");
-            console.log("AndroidManifest.xml updated OK");
-          '
+          node - << 'JS'
+          const fs = require("fs");
+          const mf = "android/app/src/main/AndroidManifest.xml";
+          let xml = fs.readFileSync(mf, "utf8");
+          const perms = [
+            "android.permission.INTERNET",
+            "android.permission.ACCESS_FINE_LOCATION",
+            "android.permission.ACCESS_COARSE_LOCATION",
+            "android.permission.CAMERA"
+          ];
+          const ins = perms.filter((p) => !xml.includes(p)).map((p) => `    <uses-permission android:name="${p}" />`);
+          if (ins.length) xml = xml.replace("<application", ins.join("\n") + "\n\n    <application");
+          const deepLink = `\n            <intent-filter>\n                <action android:name="android.intent.action.VIEW" />\n                <category android:name="android.intent.category.DEFAULT" />\n                <category android:name="android.intent.category.BROWSABLE" />\n                <data android:scheme="tn.kouthbayek.app" android:host="callback" />\n            </intent-filter>\n        </activity>`;
+          if (!xml.includes("tn.kouthbayek.app")) {
+            xml = xml.replace("</activity>", deepLink);
+          }
+          fs.writeFileSync(mf, xml, "utf8");
+          console.log("AndroidManifest.xml updated OK");
+          JS
 
       - name: Configure fixed keystore & auto-increment versionCode
         env:
@@ -94,30 +97,42 @@ jobs:
             cp android/app/kb-debug.keystore ~/.android/debug.keystore
             echo "Fixed Khouz Bayek keystore restored OK"
           fi
-          node -e '
-            const fs = require("fs");
-            const bf = "android/app/build.gradle";
-            let g = fs.readFileSync(bf, "utf8");
-            const vc = Number(process.env.RUN_NUM || 1) + 10;
-            g = g.replace(/versionCode\s+\d+/, "versionCode " + vc);
-            g = g.replace(/versionName\s+"[^"]+"/, "versionName \"1.3." + process.env.RUN_NUM + "\"");
-            if (fs.existsSync("android/app/kb-debug.keystore") && !g.includes("kb-debug.keystore")) {
-              const signCfg = "\n    signingConfigs {\n        debug {\n            storeFile file(\"kb-debug.keystore\")\n            storePassword \"android\"\n            keyAlias \"androiddebugkey\"\n            keyPassword \"android\"\n        }\n    }\n    buildTypes {";
-              g = g.replace("    buildTypes {", signCfg);
-            }
-            fs.writeFileSync(bf, g, "utf8");
-            console.log("Updated build.gradle versionCode=" + vc);
-          '
+          node - << 'JS'
+          const fs = require("fs");
+          const bf = "android/app/build.gradle";
+          let g = fs.readFileSync(bf, "utf8");
+          const vc = Number(process.env.RUN_NUM || 1) + 10;
+          g = g.replace(/versionCode\s+\d+/, "versionCode " + vc);
+          g = g.replace(/versionName\s+"[^"]+"/, `versionName "1.5.${process.env.RUN_NUM}"`);
+          if (fs.existsSync("android/app/kb-debug.keystore") && !g.includes("kb-debug.keystore")) {
+            const signCfg = '\n    signingConfigs {\n        debug {\n            storeFile file("kb-debug.keystore")\n            storePassword "android"\n            keyAlias "androiddebugkey"\n            keyPassword "android"\n        }\n    }\n    buildTypes {';
+            g = g.replace("    buildTypes {", signCfg);
+          }
+          fs.writeFileSync(bf, g, "utf8");
+          console.log("Updated build.gradle versionCode=" + vc);
+          JS
 
       - name: Build Android APK (Debug)
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
+          cp app/build/outputs/apk/debug/app-debug.apk ../khouz-bayek.apk
 
       - name: Upload Khouz-Bayek.apk artifact
         uses: actions/upload-artifact@v4
         with:
           name: Khouz-Bayek-Android-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: khouz-bayek.apk
           retention-days: 30
+
+      - name: Publish Public Release (releases/latest)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: خوذ بايك — نسخة أندرويد الرسمية (APK)
+          body: تحميل مباشر لتطبيق خوذ بايك للأندرويد (v1.5-TN).
+          files: khouz-bayek.apk
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
