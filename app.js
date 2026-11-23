@@ -321,7 +321,8 @@
     const vKm = state.vehKm !== '' ? Number(state.vehKm) : null;
 
     return state.offers.filter((o) => {
-      if (o.status !== 'active') return false;
+      const keepSoldGrace = o.status === 'sold' && C.isNonFoodCat(o.cat) && o.expiresAt && o.expiresAt > Date.now();
+      if (o.status !== 'active' && !keepSoldGrace) return false;
       if (o.expiresAt && o.expiresAt <= Date.now()) return false;
       if (!matchesGeo(o)) return false;
       if (state.marketCat !== 'all' && o.cat !== state.marketCat) return false;
@@ -404,11 +405,17 @@
       const isClosest = idx === 0 && state.marketSort === 'nearest';
       const hasDiscount = Number.isFinite(o.prevPrice) && o.prevPrice > Number(o.price);
       const isBroadcasting = state.liveOfferId === o.id || Boolean(o.liveLocation);
-      const cardBorder = state.sharedOfferId === o.id
-        ? 'border-2 border-[#0D6857] ring-4 ring-emerald-200/70 shadow-lg'
-        : (isClosest ? 'border-2 border-amber-400/90 shadow-md' : 'border border-[#E2EAE7] shadow-sm');
+      const cardBorder = isSold
+        ? 'border border-rose-200 bg-rose-50/25 opacity-90 shadow-sm'
+        : (state.sharedOfferId === o.id
+          ? 'border-2 border-[#0D6857] ring-4 ring-emerald-200/70 shadow-lg'
+          : (isClosest ? 'border-2 border-amber-400/90 shadow-md' : 'border border-[#E2EAE7] shadow-sm'));
+      const isSold = o.status === 'sold';
       const thumbBlock = o.imageUrl
-        ? `<img src="${D.escHtml(o.imageUrl)}" alt="${D.escHtml(o.title)}" loading="lazy" decoding="async" class="h-24 w-24 shrink-0 rounded-2xl object-cover border border-[#EAE5D8] bg-slate-100" />`
+        ? `<button type="button" data-zoom-img="${D.escHtml(o.imageUrl)}" data-zoom-title="${D.escHtml(o.title)}" class="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-[#EAE5D8] bg-slate-100 cursor-zoom-in group focus:outline-none">
+             <img src="${D.escHtml(o.imageUrl)}" alt="${D.escHtml(o.title)}" loading="lazy" decoding="async" class="h-full w-full object-cover transition duration-200 group-hover:scale-105" />
+             <span class="absolute bottom-1 left-1 rounded-full bg-black/60 px-1.5 py-0.5 text-[10px] font-black text-white shadow">🔍</span>
+           </button>`
         : `<div class="flex h-24 w-24 shrink-0 flex-col items-center justify-center rounded-2xl border border-[#EAE5D8] bg-gradient-to-br from-[#E8F6F2] via-[#F7F9F8] to-[#FEF3C7]/60 text-center">
              <span class="text-3xl leading-none">${cat.icon}</span>
              <span class="mt-1 text-[9px] font-black text-[#0D6857]/80 px-1 truncate max-w-full">${D.escHtml(cat.label)}</span>
@@ -435,9 +442,10 @@
 
               <div class="flex flex-wrap items-center gap-1 pt-0.5">
                 ${isClosest ? '<span class="rounded-full bg-amber-100 border border-amber-200 px-2 py-0.5 text-[10px] font-black text-amber-900">⭐ الأقرب</span>' : `<span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700">${cat.icon} ${D.escHtml(cat.label)}</span>`}
-                ${hasDiscount ? '<span class="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-black text-white">🔥 تخفيض</span>' : ''}
-                ${isBroadcasting ? '<span class="rounded-full bg-emerald-100 border border-emerald-300 px-2 py-0.5 text-[10px] font-black text-emerald-900">🟢 هنا الآن</span>' : ''}
-                <span class="text-[10px] font-bold text-amber-800">⏱️ ${D.escHtml(D.formatRemaining(o.expiresAt))}</span>
+                ${isSold ? '<span class="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-black text-white">✅ تم البيع</span>' : ''}
+                ${!isSold && hasDiscount ? '<span class="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-black text-white">🔥 تخفيض</span>' : ''}
+                ${!isSold && isBroadcasting ? '<span class="rounded-full bg-emerald-100 border border-emerald-300 px-2 py-0.5 text-[10px] font-black text-emerald-900">🟢 هنا الآن</span>' : ''}
+                <span class="text-[10px] font-bold ${isSold ? 'text-rose-700' : 'text-amber-800'}">⏱️ ${isSold ? 'يختفي ' : ''}${D.escHtml(D.formatRemaining(o.expiresAt))}</span>
               </div>
             </div>
           </div>
@@ -456,7 +464,9 @@
               <button type="button" data-share-offer="${D.escHtml(o.id)}" class="rounded-lg bg-slate-100 hover:bg-slate-200 px-2.5 py-1 text-slate-700 transition">📤 مشاركة</button>
               <button type="button" data-report-offer="${D.escHtml(o.id)}" class="rounded-lg bg-rose-50 hover:bg-rose-100 px-2.5 py-1 text-rose-700 transition">🚩 إبلاغ</button>
             </div>
-            ${owner ? `
+            ${owner ? (isSold ? `
+              <span class="rounded-lg bg-rose-100 border border-rose-200 px-2 py-1 text-rose-800">✅ تم البيع (يختفي خلال ساعة)</span>
+            ` : `
               <div class="flex flex-wrap items-center gap-1">
                 <button type="button" data-live-loc-offer="${D.escHtml(o.id)}" class="rounded-lg ${state.liveOfferId === o.id ? 'bg-rose-600 text-white' : 'bg-emerald-100 text-emerald-900 border border-emerald-300'} px-2 py-1 transition">
                   ${state.liveOfferId === o.id ? '⏹️ إيقاف البث' : '📍 أنا هنا الآن'}
@@ -464,7 +474,7 @@
                 <button type="button" data-edit-price-offer="${D.escHtml(o.id)}" class="rounded-lg bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-1 text-blue-900 transition">🏷️ السعر</button>
                 <button type="button" data-mark-sold="${D.escHtml(o.id)}" class="rounded-lg bg-amber-100 hover:bg-amber-200 border border-amber-300 px-2 py-1 text-amber-950 transition">✅ تم البيع</button>
               </div>
-            ` : ''}
+            `) : ''}
           </div>
         </article>
       `;
@@ -685,7 +695,7 @@
             <span class="shrink-0 rounded-full bg-rose-50 border border-rose-200 px-2.5 py-1 text-[11px] font-black text-rose-800">📍 ${D.escHtml(e.gov)}${dist ? ' • ' + D.escHtml(dist) : ''}</span>
           </div>
 
-          ${e.imageUrl ? `<div class="overflow-hidden rounded-2xl border border-rose-100 bg-slate-100"><img src="${D.escHtml(e.imageUrl)}" alt="صورة العطب" loading="lazy" class="h-44 w-full object-cover" /></div>` : ''}
+          ${e.imageUrl ? `<button type="button" data-zoom-img="${D.escHtml(e.imageUrl)}" data-zoom-title="⚡ ${D.escHtml(e.type)}" class="block w-full overflow-hidden rounded-2xl border border-rose-100 bg-slate-100 cursor-zoom-in"><img src="${D.escHtml(e.imageUrl)}" alt="صورة العطب" loading="lazy" class="h-44 w-full object-cover" /></button>` : ''}
 
           <div class="rounded-2xl bg-rose-50/45 border-r-4 border-rose-500 px-3.5 py-2.5">
             <p class="text-xs sm:text-sm font-bold text-slate-800 leading-relaxed">${D.escHtml(e.desc)}</p>
@@ -721,7 +731,7 @@
 
 
 
-      const myOffers = state.offers.filter((o) => isOfferOwner(o) && o.status === 'active');
+      const myOffers = state.offers.filter((o) => isOfferOwner(o) && (o.status === 'active' || (o.status === 'sold' && C.isNonFoodCat(o.cat) && o.expiresAt > Date.now())));
       const myCrafts = state.crafts.filter((c) => c.userId && c.userId === acc.userId);
       if ($('dashAddCraftBtn')) {
         $('dashAddCraftBtn').classList.toggle('hidden', myCrafts.length > 0);
@@ -733,11 +743,15 @@
               <span class="truncate font-black">🧺 ${D.escHtml(o.title)} (${D.escHtml(o.price)} د.ت)</span>
               <span class="shrink-0 text-[10px] font-bold text-amber-800">${D.escHtml(D.formatRemaining(o.expiresAt))}</span>
             </div>
-            <div class="flex flex-wrap items-center gap-1">
-              <button type="button" data-live-loc-offer="${D.escHtml(o.id)}" class="rounded-lg ${state.liveOfferId === o.id ? 'bg-rose-600 text-white' : 'bg-emerald-100 text-emerald-900'} px-2 py-1 text-[10px] font-extrabold">${state.liveOfferId === o.id ? '⏹️ إيقاف البث' : '📍 أنا هنا الآن'}</button>
-              <button type="button" data-edit-price-offer="${D.escHtml(o.id)}" class="rounded-lg bg-blue-100 text-blue-900 px-2 py-1 text-[10px] font-extrabold">🏷️ تعديل السعر</button>
-              <button type="button" data-mark-sold="${D.escHtml(o.id)}" class="rounded-lg bg-amber-100 text-amber-950 px-2 py-1 text-[10px] font-extrabold">✅ تم البيع</button>
-            </div>
+            ${o.status === 'sold' ? `
+              <span class="inline-block rounded-lg bg-rose-100 text-rose-800 px-2 py-1 text-[10px] font-extrabold">✅ تم البيع — يختفي ${D.escHtml(D.formatRemaining(o.expiresAt))}</span>
+            ` : `
+              <div class="flex flex-wrap items-center gap-1">
+                <button type="button" data-live-loc-offer="${D.escHtml(o.id)}" class="rounded-lg ${state.liveOfferId === o.id ? 'bg-rose-600 text-white' : 'bg-emerald-100 text-emerald-900'} px-2 py-1 text-[10px] font-extrabold">${state.liveOfferId === o.id ? '⏹️ إيقاف البث' : '📍 أنا هنا الآن'}</button>
+                <button type="button" data-edit-price-offer="${D.escHtml(o.id)}" class="rounded-lg bg-blue-100 text-blue-900 px-2 py-1 text-[10px] font-extrabold">🏷️ تعديل السعر</button>
+                <button type="button" data-mark-sold="${D.escHtml(o.id)}" class="rounded-lg bg-amber-100 text-amber-950 px-2 py-1 text-[10px] font-extrabold">✅ تم البيع</button>
+              </div>
+            `}
           </div>
         `),
         ...myCrafts.map((c) => `
@@ -819,7 +833,15 @@
   }
 
   function toggleVehicleFields() {
-    $('vehicleSpecsBox').classList.toggle('hidden', $('ofCat').value !== 'vehicles');
+    const cat = $('ofCat').value;
+    $('vehicleSpecsBox').classList.toggle('hidden', cat !== 'vehicles');
+    const durSel = $('ofDurationHours');
+    if (durSel) {
+      const opt72 = durSel.querySelector('option[value="72"]');
+      const nonFood = C.isNonFoodCat(cat);
+      if (opt72) opt72.hidden = !nonFood;
+      durSel.value = nonFood ? '72' : (durSel.value === '72' ? '24' : durSel.value);
+    }
   }
 
   function openModal(id) {
@@ -1300,16 +1322,33 @@
       return;
     }
 
+    const zoomBtn = e.target.closest('[data-zoom-img]');
+    if (zoomBtn) {
+      const src = zoomBtn.dataset.zoomImg;
+      const title = zoomBtn.dataset.zoomTitle || '';
+      if (src && $('imgZoomTarget')) {
+        $('imgZoomTarget').src = src;
+        $('imgZoomTarget').alt = title;
+        if ($('imgZoomCaption')) $('imgZoomCaption').textContent = title;
+        openModal('imgZoomModal');
+      }
+      return;
+    }
+
     const soldBtn = e.target.closest('[data-mark-sold]');
     if (soldBtn) {
       const id = soldBtn.dataset.markSold;
+      const target = state.offers.find((o) => o.id === id);
+      const isNonFood = Boolean(target && C.isNonFoodCat(target.cat));
       if (state.liveOfferId === id) stopLiveLocationBroadcast(true);
-      const res = await D.markOfferSold(id, state.account && state.account.userId);
+      const res = await D.markOfferSold(id, state.account && state.account.userId, isNonFood);
       if (!res.ok) return showToast('⚠️ تعذر تحديث حالة الإعلان: ' + (res.error || 'حاول مجدداً'));
-      state.offers = state.offers.map((o) => o.id === id ? { ...o, status: 'sold', liveLocation: false } : o);
+      state.offers = state.offers.map((o) => o.id === id ? { ...o, status: 'sold', liveLocation: false, expiresAt: res.expiresAt } : o);
       D.lsSet(D.STORE_KEYS.offers, state.offers);
       renderAll();
-      showToast('✅ تم تحديد الإعلان كمباع وإخفاؤه من السوق.');
+      showToast(isNonFood
+        ? '✅ تم تحديد العرض كمباع — سيظهر بشارة «تم البيع» ويختفي تلقائياً بعد ساعة.'
+        : '✅ تم تحديد الإعلان كمباع وإخفاؤه من السوق.');
       return;
     }
 
@@ -1652,7 +1691,9 @@
     const mod = D.checkContentModeration(`${title} ${rawDesc} ${$('ofSeller').value}`);
     if (!mod.ok) return showToast(mod.reason);
 
-    const durHrs = Math.min(24, Math.max(1, Number($('ofDurationHours').value) || 24));
+    const isNonFood = C.isNonFoodCat($('ofCat').value);
+    const maxDur = isNonFood ? (C.NON_FOOD_TTL_HOURS || 72) : (C.OFFER_TTL_HOURS || 24);
+    const durHrs = Math.min(maxDur, Math.max(1, Number($('ofDurationHours').value) || maxDur));
     const submitBtn = $('ofSubmitBtn');
     submitBtn.disabled = true;
     submitBtn.textContent = '⏳ جاري رفع الصورة ونشر العرض...';
@@ -1706,7 +1747,7 @@
       state.pendingOfferPhoto = null;
       closeModal('offerModal');
       renderAll();
-      showToast(`✓ تم نشر عرضك (يُحذف تلقائياً بعد ${durHrs} ساعة)`);
+      showToast(`✓ تم نشر عرضك (يُحذف تلقائياً بعد ${durHrs === 72 ? '3 أيام' : durHrs + ' ساعة'})`);
     } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = 'نشر العرض الآن';
