@@ -1,6 +1,6 @@
 {
   "name": "khouz-bayek-android",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "خوذ بايك — دليل الحرفيين • سوق الحومة • صيانة عاجلة",
   "scripts": {
     "prepare:www": "node -e \"const fs=require('fs'); fs.rmSync('www',{recursive:true,force:true}); fs.mkdirSync('www',{recursive:true}); ['index.html','styles.css','config.js','data.js','map.js','privacy.js','admin.js','app.js','sw.js','privacy.html','icon-512.png'].forEach(f=>{ if(fs.existsSync(f)) fs.copyFileSync(f,'www/'+f); }); console.log('Prepared www/ OK');\""
@@ -10,6 +10,7 @@
     "@capacitor/app": "^6.0.1",
     "@capacitor/browser": "^6.0.2",
     "@capacitor/cli": "^6.1.2",
-    "@capacitor/core": "^6.1.2"
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/share": "^6.0.2"
   }
 }
