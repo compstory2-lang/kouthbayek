@@ -1,4 +1,4 @@
-// خوذ بايك — وحدة لوحة الإدارة الكاملة (admin.js: الرسائل الإدارية، البلاغات، توثيق الحرفيين/الباتيندا، إدارة العروض والطوارئ)
+// خوذ بايك — وحدة لوحة الإدارة الكاملة (admin.js: الرسائل الإدارية، البلاغات، توثيق الحرفيين/الباتيندا، إدارة العروض)
 (() => {
   'use strict';
 
@@ -19,8 +19,12 @@
 
   function getSupabase() {
     if (sbClient) return sbClient;
-    if (window.supabase && C.SUPABASE_URL && C.SUPABASE_ANON_KEY) {
-      sbClient = window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY);
+    const url = (C.SUPABASE && C.SUPABASE.url) || C.SUPABASE_URL;
+    const key = (C.SUPABASE && C.SUPABASE.anonKey) || C.SUPABASE_ANON_KEY;
+    if (window.supabase && url && key) {
+      sbClient = window.supabase.createClient(url, key, {
+        auth: { flowType: 'pkce', detectSessionInUrl: true, persistSession: true, autoRefreshToken: true }
+      });
     }
     return sbClient;
   }
@@ -77,7 +81,6 @@
         return true;
       }
 
-      // Fallback check via Supabase RPC is_kb_admin()
       const { data: rpcRes, error } = await sb.rpc('is_kb_admin');
       if (!error && rpcRes === true) return true;
     } catch (_) {}
@@ -134,7 +137,6 @@
       return;
     }
 
-    // 1) الرسائل الإدارية
     if (adminState.activeSubTab === 'messages') {
       if (!adminState.messages.length) {
         bodyEl.innerHTML = '<p class="text-center text-xs font-bold text-slate-400 py-4">لا توجد رسائل إدارية واردة حالياً.</p>';
@@ -143,11 +145,11 @@
       bodyEl.innerHTML = adminState.messages.map((m) => `
         <div class="rounded-2xl border border-slate-200 bg-[#F8FAF9] p-3 space-y-1.5">
           <div class="flex items-center justify-between gap-2">
-            <span class="text-xs font-black text-[#132A23]">📌 ${esc(m.subject || 'رسالة واردة')}</span>
+            <span class="text-xs font-black text-[#132A23]">📌 ${esc(m.topic || m.subject || 'رسالة واردة')}</span>
             <span class="text-[10px] font-bold text-slate-400">${esc(fmtDate(m.created_at))}</span>
           </div>
           <p class="text-[11px] font-bold text-emerald-800">
-            👤 ${esc(m.sender_name || 'زائر')} ${m.sender_contact ? '• 📞 ' + esc(m.sender_contact) : ''}
+            👤 ${esc(m.sender_name || 'زائر')} ${(m.sender_phone || m.sender_contact) ? '• 📞 ' + esc(m.sender_phone || m.sender_contact) : ''}
           </p>
           <p class="text-xs font-semibold text-slate-700 whitespace-pre-line bg-white rounded-xl p-2.5 border border-slate-100">${esc(m.message || '')}</p>
           <div class="flex justify-end pt-1">
@@ -158,7 +160,6 @@
       return;
     }
 
-    // 2) بلاغات المخالفات
     if (adminState.activeSubTab === 'reports') {
       if (!adminState.reports.length) {
         bodyEl.innerHTML = '<p class="text-center text-xs font-bold text-slate-400 py-4">لا توجد بلاغات مسجّلة حالياً.</p>';
@@ -180,7 +181,6 @@
       return;
     }
 
-    // 3) دليل الحرفيين والتوثيق (الباتيندا)
     if (adminState.activeSubTab === 'craftsmen') {
       if (!adminState.craftsmen.length) {
         bodyEl.innerHTML = '<p class="text-center text-xs font-bold text-slate-400 py-4">لا يوجد حرفيون مسجّلون بعد.</p>';
@@ -197,7 +197,7 @@
                 ${isVerified ? '✓ موثّق بالباتيندا' : '⏳ غير موثّق'}
               </span>
             </div>
-            <p class="text-[11px] font-bold text-slate-600">📍 ${esc(c.gov)} (${esc(c.area || '')}) • 📞 ${esc(c.phone || '')}</p>
+            <p class="text-[11px] font-bold text-slate-600">📍 ${esc(c.governorate || c.gov || '')} (${esc(c.area || '')}) • 📞 ${esc(c.phone || '')}</p>
             <div class="flex flex-wrap justify-end gap-1.5 pt-1">
               <button type="button" data-admin-toggle-verify="${esc(c.id)}" data-current-verify="${isVerified ? '1' : '0'}" class="rounded-lg ${isVerified ? 'bg-amber-100 text-amber-950' : 'bg-[#0D6857] text-white'} px-2.5 py-1 text-[10px] font-extrabold">
                 ${isVerified ? 'إلغاء التوثيق' : '🏅 توثيق الحرفي'}
@@ -210,7 +210,6 @@
       return;
     }
 
-    // 4) العروض النشطة في السوق
     if (adminState.activeSubTab === 'offers') {
       if (!adminState.offers.length) {
         bodyEl.innerHTML = '<p class="text-center text-xs font-bold text-slate-400 py-4">لا توجد عروض نشطة حالياً.</p>';
@@ -220,9 +219,9 @@
         <div class="rounded-2xl border border-slate-200 bg-[#F8FAF9] p-3 space-y-1.5">
           <div class="flex items-center justify-between gap-2">
             <span class="text-xs font-black text-[#132A23]">🧺 ${esc(o.title)} (${esc(o.price)} د.ت)</span>
-            <span class="text-[10px] font-bold text-slate-500">📍 ${esc(o.gov)}</span>
+            <span class="text-[10px] font-bold text-slate-500">📍 ${esc(o.governorate || o.gov || '')}</span>
           </div>
-          <p class="text-[11px] font-bold text-slate-600">👤 ${esc(o.seller || '')} • 📞 ${esc(o.phone || '')}</p>
+          <p class="text-[11px] font-bold text-slate-600">👤 ${esc(o.seller_name || o.seller || '')} • 📞 ${esc(o.phone || '')}</p>
           <div class="flex justify-end pt-1">
             <button type="button" data-admin-hide-offer="${esc(o.id)}" class="rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 px-2.5 py-1 text-[10px] font-extrabold">⛔ حذف / إخفاء العرض</button>
           </div>
