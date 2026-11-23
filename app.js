@@ -52,7 +52,8 @@
     sharedOfferId: null,
     liveWatchId: null,
     liveOfferId: null,
-    lastLivePushAt: 0
+    lastLivePushAt: 0,
+    isAdminUser: false
   };
 
   let toastTimer = null;
@@ -772,6 +773,18 @@
     } else {
       authBox.classList.remove('hidden');
       phoneBox.classList.add('hidden');
+    }
+
+    if ($('adminPanelBox')) {
+      const uid = (state.account && state.account.userId) || (state.authUser && state.authUser.id) || '';
+      const em = ((state.account && state.account.email) || (state.authUser && state.authUser.email) || '').toLowerCase();
+      const adminEmails = (C && Array.isArray(C.ADMIN_EMAILS)) ? C.ADMIN_EMAILS.map((x) => String(x).toLowerCase()) : [];
+      const adminIds = (C && Array.isArray(C.ADMIN_USER_IDS)) ? C.ADMIN_USER_IDS.map(String) : [];
+      state.isAdminUser = Boolean((uid && adminIds.includes(String(uid))) || (em && adminEmails.includes(em)));
+      $('adminPanelBox').classList.toggle('hidden', !state.isAdminUser);
+      if (state.isAdminUser && $('adminStatsTxt')) {
+        $('adminStatsTxt').textContent = `الحسابات: ${state.crafts.length} حرفي • العروض النشطة: ${state.offers.filter((o) => o.status === 'active').length} • البلاغات المفتوحة: ${state.emergencies.filter((e) => e.status === 'open').length}`;
+      }
     }
   }
 
